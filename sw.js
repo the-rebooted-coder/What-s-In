@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pg-menu-v1.4';
+const CACHE_NAME = 'pg-menu-v1.5';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
