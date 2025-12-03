@@ -11,7 +11,7 @@
     <meta property="og:url" content="https://the-rebooted-coder.github.io/What-s-In/">
 
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="What's In... Menu Tracker">
+    <meta name="twitter:title" content="What's In...">
     <meta name="twitter:description" content="Instant PG menu tracker. Check what's for food right now.">
     <meta name="twitter:image" content="./icons/og-share.png">
     
@@ -19,12 +19,10 @@
     <meta name="description" content="Weekly PG Menu Tracker. Instantly check what's for food based on the time of day.">
     <meta name="theme-color" content="#FFFDF0">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="What's In">
 
     <link rel="manifest" href="manifest.json">
-    
     <link rel="apple-touch-icon" href="icons/apple-icon-180.png">
     <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png">
 
@@ -39,7 +37,6 @@
             --shadow: 6px 6px 0px 0px #000000;
             --shadow-active: 2px 2px 0px 0px #000000;
             --font-main: 'Courier New', Courier, monospace;
-            /* CHANGED: Switched to Arial Black for a wider, bolder look */
             --font-display: 'Arial Black', 'Arial Bold', Gadget, sans-serif;
         }
 
@@ -50,24 +47,83 @@
             color: #000;
             font-family: var(--font-main);
             margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            padding: 0; /* Reset padding for full-screen wall */
             min-height: 100vh;
-            /* Prevent pull-to-refresh on mobile to feel more app-like */
             overscroll-behavior-y: none;
         }
 
-        /* TYPOGRAPHY */
+        /* --- APP CONTAINER (Hidden by default until standalone check passes) --- */
+        #app-container {
+            display: none; /* JS will toggle this to 'flex' */
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            padding: 20px;
+        }
+
+        /* --- INSTALL WALL (Visible by default) --- */
+        #install-wall {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+            padding: 30px;
+            background-color: var(--secondary);
+            text-align: center;
+            position: fixed;
+            top: 0; left: 0;
+            z-index: 9999;
+        }
+
+        .wall-title {
+            font-family: var(--font-display);
+            font-size: 3rem;
+            line-height: 0.9;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            border-bottom: var(--border);
+            padding-bottom: 10px;
+        }
+
+        .wall-subtitle {
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+        }
+
+        .instruction-card {
+            background: white;
+            border: var(--border);
+            box-shadow: var(--shadow);
+            padding: 20px;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .step-num {
+            background: black;
+            color: white;
+            padding: 2px 8px;
+            font-weight: bold;
+            margin-right: 10px;
+            border-radius: 2px;
+        }
+
+        .step { margin: 15px 0; text-align: left; display: flex; align-items: center; }
+        
+        /* Device Specific Sections */
+        #ios-content, #android-content, #desktop-content { display: none; }
+
+        /* TYPOGRAPHY FOR APP */
         h1 {
             font-family: var(--font-display);
             font-size: 3.5rem;
             margin: 0 0 20px 0;
-            /* CHANGED: Removed negative letter spacing so it isn't "sticky" */
             letter-spacing: -1px; 
             text-align: center;
-            line-height: 1.1; /* Increased slightly for better vertical breathing */
+            line-height: 1.1; 
             text-transform: uppercase;
         }
 
@@ -79,29 +135,24 @@
             margin-bottom: 10px;
         }
 
-        /* CONTAINERS */
+        /* APP CARDS */
         .card {
             background: white; border: var(--border); box-shadow: var(--shadow);
             padding: 20px; width: 100%; max-width: 500px; margin-bottom: 20px;
         }
 
-        /* Panel Visibility */
         #loading-panel, #display-panel, #expired-panel, #error-panel { display: none; }
 
-        /* BUTTONS */
         button {
             background: var(--primary); border: var(--border); box-shadow: var(--shadow);
             color: black; font-family: var(--font-display); font-size: 1.5rem;
             padding: 15px 20px; width: 100%; cursor: pointer;
             text-transform: uppercase; margin-bottom: 10px;
         }
-
         button:active { box-shadow: var(--shadow-active); transform: translate(4px, 4px); }
-        
         button.retry-btn { background: var(--secondary); }
         button.update-btn { width: auto; padding: 5px 15px; font-size: 1.2rem; margin: 0; }
 
-        /* DISPLAY STYLES */
         .header-row {
             display: flex; justify-content: space-between; align-items: start;
             border-bottom: var(--border); padding-bottom: 15px; margin-bottom: 15px;
@@ -118,117 +169,179 @@
 
         .food-items { font-size: 1.5rem; font-weight: bold; line-height: 1.3; }
 
-        /* EXPIRED STATE */
         .expired-msg { font-size: 1.2rem; font-weight: bold; margin-bottom: 20px; }
         .last-synced { font-size: 0.8rem; color: #666; margin-bottom: 10px; display: block;}
         
-        /* OFFLINE INDICATOR */
         #offline-badge {
             display: none;
             background: #000; color: white; padding: 5px; font-size: 0.8rem;
             margin-bottom: 10px; font-weight: bold;
         }
 
-        /* UPDATE TOAST */
         #update-toast {
             display: none;
             position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 90%;
-            max-width: 400px;
-            background: var(--secondary);
-            border: var(--border);
-            box-shadow: var(--shadow);
-            padding: 15px;
-            z-index: 1000;
-            text-align: center;
+            bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: 90%; max-width: 400px;
+            background: var(--secondary); border: var(--border); box-shadow: var(--shadow);
+            padding: 15px; z-index: 1000; text-align: center;
             animation: slideUp 0.3s ease-out;
         }
-
-        @keyframes slideUp {
-            from { transform: translate(-50%, 100%); opacity: 0; }
-            to { transform: translate(-50%, 0); opacity: 1; }
-        }
-
-        #update-toast h3 {
-            margin: 0 0 10px 0;
-            font-family: var(--font-display);
-            font-size: 1.5rem;
-            text-transform: uppercase;
-        }
-
-        #update-toast button {
-            background: var(--accent);
-            color: white;
-            font-size: 1.2rem;
-            padding: 10px;
-            margin: 0;
-            width: 100%;
-        }
+        @keyframes slideUp { from { transform: translate(-50%, 100%); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+        #update-toast h3 { margin: 0 0 10px 0; font-family: var(--font-display); font-size: 1.5rem; text-transform: uppercase; }
+        #update-toast button { background: var(--accent); color: white; font-size: 1.2rem; padding: 10px; margin: 0; width: 100%; }
 
     </style>
 </head>
 <body>
 
-    <h1>WHAT'S<br>IN...</h1>
-    
-    <div id="offline-badge">YOU ARE OFFLINE - SHOWING CACHED MENU</div>
+    <!-- === THE INSTALL WALL === -->
+    <div id="install-wall">
+        <div class="wall-title">YOU'RE DOING IT WRONG</div>
+        <div class="wall-subtitle">This isn't a website. It's an app.<br>Install it or get out.</div>
 
-    <div id="loading-panel" class="card" style="text-align: center;">
-        <h2>Syncing...</h2>
-        <p>Fetching latest menu from cloud.</p>
-    </div>
-
-    <div id="expired-panel" class="card" style="text-align: center; border-color: var(--accent);">
-        <div class="label" style="background: var(--accent);">MENU EXPIRED</div>
-        <h2>Week Over</h2>
-        <p class="expired-msg">The menu currently available is for the past week.</p>
-        <p>Waiting for new menu update...</p>
-        <button onclick="fetchMenu()" class="retry-btn">Check for Update</button>
-    </div>
-
-    <div id="error-panel" class="card" style="text-align: center;">
-        <h2>Connection Error</h2>
-        <p id="error-text">Could not reach GitHub.</p>
-        <button onclick="fetchMenu()" class="retry-btn">Retry</button>
-    </div>
-
-    <div id="display-panel" class="card">
-        <div class="header-row">
-            <div class="date-group">
-                <span class="label">UPCOMING MEAL</span>
-                <span class="big-day" id="display-day">MONDAY</span>
-                <span class="specific-date" id="display-date">Dec 01</span>
-            </div>
-            <button onclick="fetchMenu()" class="update-btn">↻</button>
+        <!-- iOS Instructions -->
+        <div id="ios-content" class="instruction-card">
+            <h3>iOS INSTRUCTIONS</h3>
+            <div class="step"><span class="step-num">1</span>Tap the Share button. (The box vomiting an arrow).</div>
+            <div class="step"><span class="step-num">2</span>Scroll down to "Add to Home Screen".</div>
+            <div class="step"><span class="step-num">3</span>Stop using Safari like a casual.</div>
         </div>
 
-        <div class="meal-type" id="display-type">LUNCH</div>
-        <div class="food-items" id="display-food">Loading...</div>
-        <span class="last-synced" id="meta-info"></span>
+        <!-- Android Instructions -->
+        <div id="android-content" class="instruction-card">
+            <h3>ANDROID INSTRUCTIONS</h3>
+            <div class="step"><span class="step-num">1</span>Tap the three dots (Menu).</div>
+            <div class="step"><span class="step-num">2</span>Tap "Install App" or "Add to Home Screen".</div>
+            <div class="step"><span class="step-num">3</span>Welcome to civilization.</div>
+        </div>
+
+        <!-- Desktop Instructions -->
+        <div id="desktop-content" class="instruction-card">
+            <h3>DESKTOP? REALLY?</h3>
+            <p>Go find your phone. This app is for people with lives.</p>
+            <p style="font-size: 0.8rem; margin-top: 10px;">(Or if you must, use Chrome → Install App)</p>
+        </div>
     </div>
 
-    <div id="update-toast">
-        <h3>New Version Available</h3>
-        <p style="margin-bottom: 10px; font-weight: bold;">Fresh code just dropped.</p>
-        <button id="reload-btn">UPDATE NOW</button>
+    <!-- === THE ACTUAL APP === -->
+    <div id="app-container">
+        <h1>WHAT'S<br>IN...</h1>
+        
+        <div id="offline-badge">YOU ARE OFFLINE - SHOWING CACHED MENU</div>
+
+        <div id="loading-panel" class="card" style="text-align: center;">
+            <h2>Syncing...</h2>
+            <p>Fetching latest menu from cloud.</p>
+        </div>
+
+        <div id="expired-panel" class="card" style="text-align: center; border-color: var(--accent);">
+            <div class="label" style="background: var(--accent);">MENU EXPIRED</div>
+            <h2>Week Over</h2>
+            <p class="expired-msg">The menu currently available is for the past week.</p>
+            <p>Waiting for new menu update...</p>
+            <button onclick="fetchMenu()" class="retry-btn">Check for Update</button>
+        </div>
+
+        <div id="error-panel" class="card" style="text-align: center;">
+            <h2>Connection Error</h2>
+            <p id="error-text">Could not reach GitHub.</p>
+            <button onclick="fetchMenu()" class="retry-btn">Retry</button>
+        </div>
+
+        <div id="display-panel" class="card">
+            <div class="header-row">
+                <div class="date-group">
+                    <span class="label">UPCOMING MEAL</span>
+                    <span class="big-day" id="display-day">MONDAY</span>
+                    <span class="specific-date" id="display-date">Dec 01</span>
+                </div>
+                <button onclick="fetchMenu()" class="update-btn">↻</button>
+            </div>
+
+            <div class="meal-type" id="display-type">LUNCH</div>
+            <div class="food-items" id="display-food">Loading...</div>
+            <span class="last-synced" id="meta-info"></span>
+        </div>
+
+        <div id="update-toast">
+            <h3>New Version Available</h3>
+            <p style="margin-bottom: 10px; font-weight: bold;">Fresh code just dropped.</p>
+            <button id="reload-btn">UPDATE NOW</button>
+        </div>
     </div>
 
     <script>
-        let newWorker; 
+        // --- DEVICE & STANDALONE DETECTION ---
+        function checkMode() {
+            // Check if running in standalone (PWA) mode
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                                 window.navigator.standalone || 
+                                 document.referrer.includes('android-app://');
 
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
+            const wall = document.getElementById('install-wall');
+            const app = document.getElementById('app-container');
+
+            if (isStandalone) {
+                // WE ARE GOOD. SHOW THE APP.
+                wall.style.display = 'none';
+                app.style.display = 'flex';
+                initApp(); // Only start app logic if installed
+            } else {
+                // WE ARE BAD. SHOW THE WALL.
+                wall.style.display = 'flex';
+                app.style.display = 'none';
+                
+                // Detect OS for insults
+                const ua = navigator.userAgent;
+                if (/android/i.test(ua)) {
+                    document.getElementById('android-content').style.display = 'block';
+                } else if (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) {
+                    document.getElementById('ios-content').style.display = 'block';
+                } else {
+                    document.getElementById('desktop-content').style.display = 'block';
+                }
+            }
+        }
+
+        // --- APP LOGIC WRAPPER ---
+        // We wrap the original logic so it only runs if checkMode passes
+        let newWorker; 
+        
+        // CONFIG
+        const MENU_URL = "https://gist.githubusercontent.com/the-rebooted-coder/b2d795d38fff48d9aa4e15e65d818262/raw/menu.json";
+        const TIME_LIMITS = { breakfast: 11, lunch: 15, snacks: 18, dinner: 22 };
+        const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        
+        // GLOBAL VARS
+        let panels, els;
+
+        function initApp() {
+            // Set up DOM refs now that they are visible
+            panels = {
+                loading: document.getElementById('loading-panel'),
+                display: document.getElementById('display-panel'),
+                expired: document.getElementById('expired-panel'),
+                error: document.getElementById('error-panel')
+            };
+            
+            els = {
+                day: document.getElementById('display-day'),
+                date: document.getElementById('display-date'),
+                type: document.getElementById('display-type'),
+                food: document.getElementById('display-food'),
+                meta: document.getElementById('meta-info'),
+                errText: document.getElementById('error-text')
+            };
+
+            // Register SW
+            if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('./sw.js').then(reg => {
                     console.log('SW Registered');
-
                     if (reg.waiting) {
                         newWorker = reg.waiting;
                         showUpdateNotification();
                     }
-
                     reg.addEventListener('updatefound', () => {
                         newWorker = reg.installing;
                         newWorker.addEventListener('statechange', () => {
@@ -238,56 +351,33 @@
                         });
                     });
                 }).catch(err => console.log('SW Fail', err));
+
+                let refreshing;
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (refreshing) return;
+                    window.location.reload();
+                    refreshing = true;
+                });
+            }
+
+            // Listeners
+            window.addEventListener('offline', () => document.getElementById('offline-badge').style.display = 'block');
+            window.addEventListener('online', () => {
+                document.getElementById('offline-badge').style.display = 'none';
+                fetchMenu();
             });
 
-            let refreshing;
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                if (refreshing) return;
-                window.location.reload();
-                refreshing = true;
-            });
+            // Start
+            fetchMenu();
         }
 
         function showUpdateNotification() {
             const toast = document.getElementById('update-toast');
             toast.style.display = 'block';
-            
             document.getElementById('reload-btn').addEventListener('click', () => {
-                if(newWorker) {
-                    newWorker.postMessage({ action: 'skipWaiting' });
-                }
+                if(newWorker) newWorker.postMessage({ action: 'skipWaiting' });
             });
         }
-        
-        window.addEventListener('offline', () => document.getElementById('offline-badge').style.display = 'block');
-        window.addEventListener('online', () => {
-            document.getElementById('offline-badge').style.display = 'none';
-            fetchMenu();
-        });
-
-        // --- CONFIGURATION ---
-        const MENU_URL = "https://gist.githubusercontent.com/the-rebooted-coder/b2d795d38fff48d9aa4e15e65d818262/raw/menu.json";
-        
-        const TIME_LIMITS = { breakfast: 11, lunch: 15, snacks: 18, dinner: 22 };
-        const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-
-        const panels = {
-            loading: document.getElementById('loading-panel'),
-            display: document.getElementById('display-panel'),
-            expired: document.getElementById('expired-panel'),
-            error: document.getElementById('error-panel')
-        };
-        
-        const els = {
-            day: document.getElementById('display-day'),
-            date: document.getElementById('display-date'),
-            type: document.getElementById('display-type'),
-            food: document.getElementById('display-food'),
-            meta: document.getElementById('meta-info'),
-            errText: document.getElementById('error-text')
-        };
-
-        fetchMenu();
 
         async function fetchMenu() {
             showPanel('loading');
@@ -310,17 +400,11 @@
                     }
                 }
                 
-                if (!data.meta || !data.meta.weekStart || !data.menu) {
-                    throw new Error("Invalid Menu Format");
-                }
+                if (!data.meta || !data.meta.weekStart || !data.menu) throw new Error("Invalid Menu Format");
 
                 const validity = checkDateValidity(data.meta.weekStart);
-
-                if (validity === 'EXPIRED') {
-                    showPanel('expired');
-                } else {
-                    renderDisplay(data, validity === 'UPCOMING');
-                }
+                if (validity === 'EXPIRED') showPanel('expired');
+                else renderDisplay(data, validity === 'UPCOMING');
 
             } catch (err) {
                 console.error(err);
@@ -387,6 +471,10 @@
             Object.values(panels).forEach(p => p.style.display = 'none');
             panels[name].style.display = 'block';
         }
+
+        // --- RUN THE CHECK ON LOAD ---
+        window.addEventListener('load', checkMode);
+
     </script>
 </body>
 </html>
