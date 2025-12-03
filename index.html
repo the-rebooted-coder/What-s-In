@@ -15,7 +15,6 @@
     <meta name="twitter:description" content="Instant PG menu tracker. Check what's for food right now.">
     <meta name="twitter:image" content="./icons/og-share.png">
     
-    <!-- SEO & App Meta -->
     <title>What's In...</title>
     <meta name="description" content="Weekly PG Menu Tracker. Instantly check what's for food based on the time of day.">
     <meta name="theme-color" content="#FFFDF0">
@@ -23,10 +22,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="What's In">
 
-    <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
     
-    <!-- Icons (You need to create these) -->
     <link rel="apple-touch-icon" href="icons/apple-icon-180.png">
     <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png">
 
@@ -128,6 +125,45 @@
             margin-bottom: 10px; font-weight: bold;
         }
 
+        /* --- NEW: UPDATE TOAST (Neo-Brutalist Style) --- */
+        #update-toast {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 400px;
+            background: var(--secondary);
+            border: var(--border);
+            box-shadow: var(--shadow);
+            padding: 15px;
+            z-index: 1000;
+            text-align: center;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translate(-50%, 100%); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
+        }
+
+        #update-toast h3 {
+            margin: 0 0 10px 0;
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            text-transform: uppercase;
+        }
+
+        #update-toast button {
+            background: var(--accent);
+            color: white;
+            font-size: 1.2rem;
+            padding: 10px;
+            margin: 0;
+            width: 100%;
+        }
+
     </style>
 </head>
 <body>
@@ -136,13 +172,11 @@
     
     <div id="offline-badge">YOU ARE OFFLINE - SHOWING CACHED MENU</div>
 
-    <!-- 1. LOADING STATE -->
     <div id="loading-panel" class="card" style="text-align: center;">
         <h2>Syncing...</h2>
         <p>Fetching latest menu from cloud.</p>
     </div>
 
-    <!-- 2. EXPIRED / OUTDATED STATE -->
     <div id="expired-panel" class="card" style="text-align: center; border-color: var(--accent);">
         <div class="label" style="background: var(--accent);">MENU EXPIRED</div>
         <h2>Week Over</h2>
@@ -151,14 +185,12 @@
         <button onclick="fetchMenu()" class="retry-btn">Check for Update</button>
     </div>
 
-    <!-- 3. ERROR STATE -->
     <div id="error-panel" class="card" style="text-align: center;">
         <h2>Connection Error</h2>
         <p id="error-text">Could not reach GitHub.</p>
         <button onclick="fetchMenu()" class="retry-btn">Retry</button>
     </div>
 
-    <!-- 4. DISPLAY STATE -->
     <div id="display-panel" class="card">
         <div class="header-row">
             <div class="date-group">
@@ -174,13 +206,59 @@
         <span class="last-synced" id="meta-info"></span>
     </div>
 
+    <div id="update-toast">
+        <h3>New Version Available</h3>
+        <p style="margin-bottom: 10px; font-weight: bold;">Fresh code just dropped.</p>
+        <button id="reload-btn">UPDATE NOW</button>
+    </div>
+
     <script>
-        // --- SERVICE WORKER REGISTRATION ---
+        let newWorker; // To store the worker waiting to be installed
+
+        // --- SERVICE WORKER REGISTRATION & UPDATE LOGIC ---
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(reg => console.log('SW Registered'))
-                    .catch(err => console.log('SW Fail', err));
+                navigator.serviceWorker.register('./sw.js').then(reg => {
+                    console.log('SW Registered');
+
+                    // 1. Check if there is already a waiting worker
+                    if (reg.waiting) {
+                        newWorker = reg.waiting;
+                        showUpdateNotification();
+                    }
+
+                    // 2. Listen for new workers being installed
+                    reg.addEventListener('updatefound', () => {
+                        newWorker = reg.installing;
+                        
+                        newWorker.addEventListener('statechange', () => {
+                            // If state is 'installed' and we have a current controller, it's an update
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                showUpdateNotification();
+                            }
+                        });
+                    });
+                }).catch(err => console.log('SW Fail', err));
+            });
+
+            // 3. Listen for the controller change (when the new SW takes over)
+            let refreshing;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (refreshing) return;
+                window.location.reload();
+                refreshing = true;
+            });
+        }
+
+        function showUpdateNotification() {
+            const toast = document.getElementById('update-toast');
+            toast.style.display = 'block';
+            
+            document.getElementById('reload-btn').addEventListener('click', () => {
+                // Tell the waiting worker to skip waiting
+                if(newWorker) {
+                    newWorker.postMessage({ action: 'skipWaiting' });
+                }
             });
         }
         
