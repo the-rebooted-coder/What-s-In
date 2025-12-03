@@ -47,21 +47,21 @@
             color: #000;
             font-family: var(--font-main);
             margin: 0;
-            padding: 0; /* Reset padding for full-screen wall */
+            padding: 0; 
             min-height: 100vh;
             overscroll-behavior-y: none;
         }
 
-        /* --- APP CONTAINER (Hidden by default until standalone check passes) --- */
+        /* --- APP CONTAINER --- */
         #app-container {
-            display: none; /* JS will toggle this to 'flex' */
+            display: none; 
             flex-direction: column;
             align-items: center;
             width: 100%;
             padding: 20px;
         }
 
-        /* --- INSTALL WALL (Visible by default) --- */
+        /* --- INSTALL WALL --- */
         #install-wall {
             display: flex;
             flex-direction: column;
@@ -87,33 +87,20 @@
             padding-bottom: 10px;
         }
 
-        .wall-subtitle {
-            font-weight: bold;
-            font-size: 1.2rem;
-            margin-bottom: 30px;
-        }
+        .wall-subtitle { font-weight: bold; font-size: 1.2rem; margin-bottom: 30px; }
 
         .instruction-card {
-            background: white;
-            border: var(--border);
-            box-shadow: var(--shadow);
-            padding: 20px;
-            max-width: 400px;
-            width: 100%;
+            background: white; border: var(--border); box-shadow: var(--shadow);
+            padding: 20px; max-width: 400px; width: 100%;
         }
 
         .step-num {
-            background: black;
-            color: white;
-            padding: 2px 8px;
-            font-weight: bold;
-            margin-right: 10px;
-            border-radius: 2px;
+            background: black; color: white; padding: 2px 8px;
+            font-weight: bold; margin-right: 10px; border-radius: 2px;
         }
 
         .step { margin: 15px 0; text-align: left; display: flex; align-items: center; }
         
-        /* Device Specific Sections */
         #ios-content, #android-content, #desktop-content { display: none; }
 
         /* TYPOGRAPHY FOR APP */
@@ -152,6 +139,14 @@
         button:active { box-shadow: var(--shadow-active); transform: translate(4px, 4px); }
         button.retry-btn { background: var(--secondary); }
         button.update-btn { width: auto; padding: 5px 15px; font-size: 1.2rem; margin: 0; }
+        
+        /* NEW: Full Menu Button Style */
+        button.full-menu-btn {
+            background: white;
+            font-size: 1.2rem;
+            margin-top: 20px;
+            padding: 10px;
+        }
 
         .header-row {
             display: flex; justify-content: space-between; align-items: start;
@@ -173,15 +168,12 @@
         .last-synced { font-size: 0.8rem; color: #666; margin-bottom: 10px; display: block;}
         
         #offline-badge {
-            display: none;
-            background: #000; color: white; padding: 5px; font-size: 0.8rem;
+            display: none; background: #000; color: white; padding: 5px; font-size: 0.8rem;
             margin-bottom: 10px; font-weight: bold;
         }
 
         #update-toast {
-            display: none;
-            position: fixed;
-            bottom: 20px; left: 50%; transform: translateX(-50%);
+            display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
             width: 90%; max-width: 400px;
             background: var(--secondary); border: var(--border); box-shadow: var(--shadow);
             padding: 15px; z-index: 1000; text-align: center;
@@ -191,16 +183,70 @@
         #update-toast h3 { margin: 0 0 10px 0; font-family: var(--font-display); font-size: 1.5rem; text-transform: uppercase; }
         #update-toast button { background: var(--accent); color: white; font-size: 1.2rem; padding: 10px; margin: 0; width: 100%; }
 
+        /* --- NEW: FULL MENU MODAL STYLES --- */
+        #full-menu-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.85); /* Dark dim */
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            animation: fadeIn 0.2s ease-out;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .modal-card {
+            background: var(--bg-color);
+            border: var(--border);
+            box-shadow: var(--shadow);
+            width: 100%; max-width: 500px;
+            max-height: 85vh;
+            display: flex; flex-direction: column;
+        }
+
+        .modal-header {
+            background: var(--secondary);
+            border-bottom: var(--border);
+            padding: 15px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        
+        .modal-title { font-family: var(--font-display); font-size: 1.5rem; text-transform: uppercase; }
+
+        .close-btn {
+            background: var(--accent); width: auto; font-size: 1rem; padding: 5px 15px; margin: 0; box-shadow: 3px 3px 0 0 #000;
+        }
+        .close-btn:active { box-shadow: 1px 1px 0 0 #000; transform: translate(2px, 2px); }
+
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .menu-row {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px dashed #000;
+        }
+        .menu-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        
+        .menu-label {
+            display: inline-block; background: #000; color: #fff; 
+            font-weight: bold; padding: 3px 8px; font-size: 0.8rem; margin-bottom: 5px;
+        }
+        .menu-content { font-size: 1.2rem; font-weight: bold; line-height: 1.3; }
+
     </style>
 </head>
 <body>
 
-    <!-- === THE INSTALL WALL === -->
     <div id="install-wall">
         <div class="wall-title">YOU'RE DOING IT WRONG</div>
         <div class="wall-subtitle">This isn't a website. It's an app.<br>Install it or get out.</div>
 
-        <!-- iOS Instructions -->
         <div id="ios-content" class="instruction-card">
             <h3>iOS INSTRUCTIONS</h3>
             <div class="step"><span class="step-num">1</span>Tap the Share button. (The box vomiting an arrow).</div>
@@ -208,7 +254,6 @@
             <div class="step"><span class="step-num">3</span>Stop using Safari like a casual.</div>
         </div>
 
-        <!-- Android Instructions -->
         <div id="android-content" class="instruction-card">
             <h3>ANDROID INSTRUCTIONS</h3>
             <div class="step"><span class="step-num">1</span>Tap the three dots (Menu).</div>
@@ -216,7 +261,6 @@
             <div class="step"><span class="step-num">3</span>Welcome to civilization.</div>
         </div>
 
-        <!-- Desktop Instructions -->
         <div id="desktop-content" class="instruction-card">
             <h3>DESKTOP? REALLY?</h3>
             <p>Go find your phone. This app is for people with lives.</p>
@@ -224,7 +268,6 @@
         </div>
     </div>
 
-    <!-- === THE ACTUAL APP === -->
     <div id="app-container">
         <h1>WHAT'S<br>IN...</h1>
         
@@ -262,6 +305,8 @@
             <div class="meal-type" id="display-type">LUNCH</div>
             <div class="food-items" id="display-food">Loading...</div>
             <span class="last-synced" id="meta-info"></span>
+
+            <button onclick="openFullMenu()" class="full-menu-btn">VIEW FULL MENU</button>
         </div>
 
         <div id="update-toast">
@@ -271,10 +316,20 @@
         </div>
     </div>
 
+    <div id="full-menu-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <span class="modal-title" id="modal-day-title">MONDAY</span>
+                <button class="close-btn" onclick="closeFullMenu()">X</button>
+            </div>
+            <div class="modal-body" id="modal-list">
+                </div>
+        </div>
+    </div>
+
     <script>
         // --- DEVICE & STANDALONE DETECTION ---
         function checkMode() {
-            // Check if running in standalone (PWA) mode
             const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
                                  window.navigator.standalone || 
                                  document.referrer.includes('android-app://');
@@ -283,16 +338,13 @@
             const app = document.getElementById('app-container');
 
             if (isStandalone) {
-                // WE ARE GOOD. SHOW THE APP.
                 wall.style.display = 'none';
                 app.style.display = 'flex';
-                initApp(); // Only start app logic if installed
+                initApp(); 
             } else {
-                // WE ARE BAD. SHOW THE WALL.
                 wall.style.display = 'flex';
                 app.style.display = 'none';
                 
-                // Detect OS for insults
                 const ua = navigator.userAgent;
                 if (/android/i.test(ua)) {
                     document.getElementById('android-content').style.display = 'block';
@@ -304,20 +356,19 @@
             }
         }
 
-        // --- APP LOGIC WRAPPER ---
-        // We wrap the original logic so it only runs if checkMode passes
+        // --- APP LOGIC ---
         let newWorker; 
-        
-        // CONFIG
         const MENU_URL = "https://gist.githubusercontent.com/the-rebooted-coder/b2d795d38fff48d9aa4e15e65d818262/raw/menu.json";
         const TIME_LIMITS = { breakfast: 11, lunch: 15, snacks: 18, dinner: 22 };
         const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
         
-        // GLOBAL VARS
         let panels, els;
+        
+        // Store current day's full menu here
+        let currentDayMenuData = null; 
+        let currentDayNameStr = "";
 
         function initApp() {
-            // Set up DOM refs now that they are visible
             panels = {
                 loading: document.getElementById('loading-panel'),
                 display: document.getElementById('display-panel'),
@@ -331,7 +382,11 @@
                 type: document.getElementById('display-type'),
                 food: document.getElementById('display-food'),
                 meta: document.getElementById('meta-info'),
-                errText: document.getElementById('error-text')
+                errText: document.getElementById('error-text'),
+                // Modal refs
+                modal: document.getElementById('full-menu-modal'),
+                modalTitle: document.getElementById('modal-day-title'),
+                modalList: document.getElementById('modal-list')
             };
 
             // Register SW
@@ -360,14 +415,12 @@
                 });
             }
 
-            // Listeners
             window.addEventListener('offline', () => document.getElementById('offline-badge').style.display = 'block');
             window.addEventListener('online', () => {
                 document.getElementById('offline-badge').style.display = 'none';
                 fetchMenu();
             });
 
-            // Start
             fetchMenu();
         }
 
@@ -448,6 +501,11 @@
             }
 
             const dayName = DAYS[displayDayIndex];
+            
+            // SAVE DATA FOR MODAL
+            currentDayNameStr = dayName;
+            currentDayMenuData = data.menu[dayName];
+
             const startParts = data.meta.weekStart.split('-');
             const startDate = new Date(startParts[0], startParts[1] - 1, startParts[2]);
             let offset = (displayDayIndex + 6) % 7;
@@ -470,6 +528,41 @@
         function showPanel(name) {
             Object.values(panels).forEach(p => p.style.display = 'none');
             panels[name].style.display = 'block';
+        }
+
+        // --- FULL MENU FUNCTIONS ---
+        function openFullMenu() {
+            if (!currentDayMenuData) return;
+
+            els.modalTitle.innerText = currentDayNameStr.toUpperCase() + " MENU";
+            els.modalList.innerHTML = ''; // Clear previous
+
+            const mealsOrder = ['Breakfast', 'Lunch', 'Snacks', 'Dinner'];
+            
+            mealsOrder.forEach(meal => {
+                const food = currentDayMenuData[meal] || "Not listed";
+                
+                const row = document.createElement('div');
+                row.className = 'menu-row';
+                
+                const label = document.createElement('div');
+                label.className = 'menu-label';
+                label.innerText = meal.toUpperCase();
+                
+                const content = document.createElement('div');
+                content.className = 'menu-content';
+                content.innerText = food;
+
+                row.appendChild(label);
+                row.appendChild(content);
+                els.modalList.appendChild(row);
+            });
+
+            els.modal.style.display = 'flex';
+        }
+
+        function closeFullMenu() {
+            els.modal.style.display = 'none';
         }
 
         // --- RUN THE CHECK ON LOAD ---
