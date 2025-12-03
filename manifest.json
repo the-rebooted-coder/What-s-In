@@ -1,0 +1,22 @@
+{
+  "short_name": "What's In",
+  "name": "What's In... Menu Tracker",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "./index.html",
+  "background_color": "#FFFDF0",
+  "display": "standalone",
+  "scope": "./",
+  "theme_color": "#FFFDF0",
+  "orientation": "portrait"
+}
