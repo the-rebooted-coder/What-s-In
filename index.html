@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
     <meta property="og:type" content="website">
-    <meta property="og:title" content="What's In... Menu Tracker">
+    <meta property="og:title" content="What's In...">
     <meta property="og:description" content="Instant PG menu tracker. Check what's for food right now.">
     <meta property="og:image" content="./icons/og-share.png">
     <meta property="og:url" content="https://the-rebooted-coder.github.io/What-s-In/">
@@ -19,6 +19,7 @@
     <meta name="description" content="Weekly PG Menu Tracker. Instantly check what's for food based on the time of day.">
     <meta name="theme-color" content="#FFFDF0">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="What's In">
 
@@ -38,7 +39,8 @@
             --shadow: 6px 6px 0px 0px #000000;
             --shadow-active: 2px 2px 0px 0px #000000;
             --font-main: 'Courier New', Courier, monospace;
-            --font-display: Impact, Haettenschweiler, sans-serif;
+            /* CHANGED: Switched to Arial Black for a wider, bolder look */
+            --font-display: 'Arial Black', 'Arial Bold', Gadget, sans-serif;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -62,9 +64,11 @@
             font-family: var(--font-display);
             font-size: 3.5rem;
             margin: 0 0 20px 0;
-            letter-spacing: -2px;
+            /* CHANGED: Removed negative letter spacing so it isn't "sticky" */
+            letter-spacing: -1px; 
             text-align: center;
-            line-height: 0.9;
+            line-height: 1.1; /* Increased slightly for better vertical breathing */
+            text-transform: uppercase;
         }
 
         h2 { font-family: var(--font-display); font-size: 2rem; margin: 0 0 10px 0; text-transform: uppercase; }
@@ -125,7 +129,7 @@
             margin-bottom: 10px; font-weight: bold;
         }
 
-        /* --- NEW: UPDATE TOAST (Neo-Brutalist Style) --- */
+        /* UPDATE TOAST */
         #update-toast {
             display: none;
             position: fixed;
@@ -213,26 +217,21 @@
     </div>
 
     <script>
-        let newWorker; // To store the worker waiting to be installed
+        let newWorker; 
 
-        // --- SERVICE WORKER REGISTRATION & UPDATE LOGIC ---
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js').then(reg => {
                     console.log('SW Registered');
 
-                    // 1. Check if there is already a waiting worker
                     if (reg.waiting) {
                         newWorker = reg.waiting;
                         showUpdateNotification();
                     }
 
-                    // 2. Listen for new workers being installed
                     reg.addEventListener('updatefound', () => {
                         newWorker = reg.installing;
-                        
                         newWorker.addEventListener('statechange', () => {
-                            // If state is 'installed' and we have a current controller, it's an update
                             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                                 showUpdateNotification();
                             }
@@ -241,7 +240,6 @@
                 }).catch(err => console.log('SW Fail', err));
             });
 
-            // 3. Listen for the controller change (when the new SW takes over)
             let refreshing;
             navigator.serviceWorker.addEventListener('controllerchange', () => {
                 if (refreshing) return;
@@ -255,14 +253,12 @@
             toast.style.display = 'block';
             
             document.getElementById('reload-btn').addEventListener('click', () => {
-                // Tell the waiting worker to skip waiting
                 if(newWorker) {
                     newWorker.postMessage({ action: 'skipWaiting' });
                 }
             });
         }
         
-        // Handle Offline Status
         window.addEventListener('offline', () => document.getElementById('offline-badge').style.display = 'block');
         window.addEventListener('online', () => {
             document.getElementById('offline-badge').style.display = 'none';
@@ -275,7 +271,6 @@
         const TIME_LIMITS = { breakfast: 11, lunch: 15, snacks: 18, dinner: 22 };
         const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-        // --- DOM ELEMENTS ---
         const panels = {
             loading: document.getElementById('loading-panel'),
             display: document.getElementById('display-panel'),
@@ -292,28 +287,19 @@
             errText: document.getElementById('error-text')
         };
 
-        // --- INIT ---
         fetchMenu();
 
-        // --- LOGIC ---
-        
         async function fetchMenu() {
             showPanel('loading');
-
             try {
-                // Try network first
                 const uniqueUrl = MENU_URL + '?t=' + new Date().getTime();
-                
                 let data;
                 try {
                     const response = await fetch(uniqueUrl);
                     if (!response.ok) throw new Error("Server Error");
                     data = await response.json();
-                    
-                    // Save to local storage as fallback
                     localStorage.setItem('cached_menu', JSON.stringify(data));
                 } catch (netErr) {
-                    // Network failed, try local cache
                     console.log("Network failed, checking cache");
                     const cached = localStorage.getItem('cached_menu');
                     if (cached) {
@@ -324,7 +310,6 @@
                     }
                 }
                 
-                // Validate Data
                 if (!data.meta || !data.meta.weekStart || !data.menu) {
                     throw new Error("Invalid Menu Format");
                 }
@@ -350,9 +335,7 @@
             const endDate = new Date(startDate);
             endDate.setDate(startDate.getDate() + 6);
             endDate.setHours(23, 59, 59, 999);
-
             const now = new Date();
-
             if (now > endDate) return 'EXPIRED';
             else if (now < startDate) return 'UPCOMING';
             return 'CURRENT';
@@ -360,11 +343,9 @@
 
         function renderDisplay(data, isUpcoming) {
             showPanel('display');
-            
             const now = new Date();
             let dayIndex = now.getDay();
             let hour = now.getHours();
-            
             let targetMeal = "";
             let displayDayIndex = dayIndex;
 
@@ -383,11 +364,9 @@
             }
 
             const dayName = DAYS[displayDayIndex];
-
             const startParts = data.meta.weekStart.split('-');
             const startDate = new Date(startParts[0], startParts[1] - 1, startParts[2]);
             let offset = (displayDayIndex + 6) % 7;
-            
             const displayDate = new Date(startDate);
             displayDate.setDate(startDate.getDate() + offset);
             const dateString = displayDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
