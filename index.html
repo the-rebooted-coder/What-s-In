@@ -140,11 +140,24 @@
         button.retry-btn { background: var(--secondary); }
         button.update-btn { width: auto; padding: 5px 15px; font-size: 1.2rem; margin: 0; }
         
-        button.full-menu-btn {
-            background: white;
+        /* --- UPDATED: ACTION BUTTON CHIPS --- */
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+            width: 100%;
+        }
+
+        button.action-btn {
+            flex: 1; /* Equal width */
             font-size: 1.2rem;
-            margin-top: 20px;
-            padding: 10px;
+            padding: 10px 5px;
+            margin: 0;
+            background: white;
+        }
+
+        button.action-btn.week-btn {
+            background: var(--primary); /* Teal for Week */
         }
 
         .header-row {
@@ -163,7 +176,7 @@
 
         .food-items { font-size: 1.5rem; font-weight: bold; line-height: 1.3; }
 
-        /* --- UPDATED: NEXT MEAL SECTION --- */
+        /* --- NEXT MEAL SECTION --- */
         .next-meal-section {
             margin-top: 20px;
             padding-top: 15px;
@@ -177,34 +190,20 @@
             display: flex; align-items: center; gap: 10px; margin-bottom: 8px; width: 100%;
         }
 
-        /* MATCHED SIZE: LABEL */
         .next-label {
-            background: #000; 
-            color: #fff; 
-            font-size: 1rem; /* Unified Font Size */
-            padding: 5px 10px; /* Unified Padding */
-            font-weight: bold;
-            border: 2px solid #000; /* Added border to match the geometry of the other box */
+            background: #000; color: #fff; font-size: 1rem; padding: 5px 10px; font-weight: bold;
+            border: 2px solid #000; 
         }
 
-        /* MATCHED SIZE: TYPE */
         .next-type {
             font-family: var(--font-display);
-            font-size: 1rem; /* Unified Font Size */
-            color: #000;  
-            background-color: var(--secondary); 
-            padding: 5px 10px; /* Unified Padding */
-            border: 2px solid #000; 
-            box-shadow: 3px 3px 0px #000; 
-            letter-spacing: 0.5px;
-            font-weight: bold;
+            font-size: 1rem; color: #000; background-color: var(--secondary); 
+            padding: 5px 10px; border: 2px solid #000; box-shadow: 3px 3px 0px #000; 
+            letter-spacing: 0.5px; font-weight: bold;
         }
 
         .next-food {
-            font-size: 1rem;
-            font-weight: bold;
-            color: #555;
-            line-height: 1.2;
+            font-size: 1rem; font-weight: bold; color: #555; line-height: 1.2;
         }
 
         .expired-msg { font-size: 1.2rem; font-weight: bold; margin-bottom: 20px; }
@@ -226,8 +225,8 @@
         #update-toast h3 { margin: 0 0 10px 0; font-family: var(--font-display); font-size: 1.5rem; text-transform: uppercase; }
         #update-toast button { background: var(--accent); color: white; font-size: 1.2rem; padding: 10px; margin: 0; width: 100%; }
 
-        /* --- FULL MENU MODAL --- */
-        #full-menu-modal {
+        /* --- MODALS (Day & Week) --- */
+        .modal-overlay {
             display: none;
             position: fixed;
             top: 0; left: 0;
@@ -281,6 +280,20 @@
             font-weight: bold; padding: 3px 8px; font-size: 0.8rem; margin-bottom: 5px;
         }
         .menu-content { font-size: 1.2rem; font-weight: bold; line-height: 1.3; }
+
+        /* Week specific styles */
+        .day-header {
+            background: black;
+            color: white;
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            padding: 5px 10px;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            border: 2px solid #000;
+        }
+        .day-header:first-child { margin-top: 0; }
 
     </style>
 </head>
@@ -358,7 +371,10 @@
 
             <span class="last-synced" id="meta-info" style="margin-top: 20px;"></span>
 
-            <button onclick="openFullMenu()" class="full-menu-btn">VIEW FULL MENU</button>
+            <div class="button-group">
+                <button onclick="openFullMenu()" class="action-btn day-btn">TODAY</button>
+                <button onclick="openWeekMenu()" class="action-btn week-btn">WEEK</button>
+            </div>
         </div>
 
         <div id="update-toast">
@@ -368,14 +384,23 @@
         </div>
     </div>
 
-    <div id="full-menu-modal">
+    <div id="full-menu-modal" class="modal-overlay">
         <div class="modal-card">
             <div class="modal-header">
                 <span class="modal-title" id="modal-day-title">MONDAY</span>
-                <button class="close-btn" onclick="closeFullMenu()">X</button>
+                <button class="close-btn" onclick="closeModal('full-menu-modal')">X</button>
             </div>
-            <div class="modal-body" id="modal-list">
-                </div>
+            <div class="modal-body" id="modal-list"></div>
+        </div>
+    </div>
+
+    <div id="week-menu-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <span class="modal-title">FULL WEEK</span>
+                <button class="close-btn" onclick="closeModal('week-menu-modal')">X</button>
+            </div>
+            <div class="modal-body" id="week-modal-list"></div>
         </div>
     </div>
 
@@ -417,6 +442,7 @@
         let panels, els;
         let currentDayMenuData = null; 
         let currentDayNameStr = "";
+        let fullMenuData = null; // Store full data for Week View
 
         function initApp() {
             panels = {
@@ -431,15 +457,17 @@
                 date: document.getElementById('display-date'),
                 type: document.getElementById('display-type'),
                 food: document.getElementById('display-food'),
-                // New elements for next meal
                 nextType: document.getElementById('next-type'),
                 nextFood: document.getElementById('next-food'),
-                
                 meta: document.getElementById('meta-info'),
                 errText: document.getElementById('error-text'),
-                modal: document.getElementById('full-menu-modal'),
-                modalTitle: document.getElementById('modal-day-title'),
-                modalList: document.getElementById('modal-list')
+                
+                // Modals
+                dayModal: document.getElementById('full-menu-modal'),
+                dayModalTitle: document.getElementById('modal-day-title'),
+                dayModalList: document.getElementById('modal-list'),
+                weekModal: document.getElementById('week-menu-modal'),
+                weekModalList: document.getElementById('week-modal-list')
             };
 
             // Register SW
@@ -508,6 +536,9 @@
                 
                 if (!data.meta || !data.meta.weekStart || !data.menu) throw new Error("Invalid Menu Format");
 
+                // Store for later use
+                fullMenuData = data.menu;
+
                 const validity = checkDateValidity(data.meta.weekStart);
                 if (validity === 'EXPIRED') showPanel('expired');
                 else renderDisplay(data, validity === 'UPCOMING');
@@ -537,7 +568,6 @@
             let dayIndex = now.getDay();
             let hour = now.getHours();
             
-            // LOGIC FOR CURRENT MEAL
             let targetMeal = "";
             let displayDayIndex = dayIndex;
 
@@ -557,27 +587,23 @@
 
             const dayName = DAYS[displayDayIndex];
             
-            // LOGIC FOR NEXT MEAL
             const mealOrder = ["Breakfast", "Lunch", "Snacks", "Dinner"];
             let currentMealIndex = mealOrder.indexOf(targetMeal);
             let nextMeal = "";
             let nextMealDayIndex = displayDayIndex;
 
             if (currentMealIndex < 3) {
-                // Next meal is same day
                 nextMeal = mealOrder[currentMealIndex + 1];
             } else {
-                // Next meal is Breakfast of Next Day
                 nextMeal = "Breakfast";
                 nextMealDayIndex = (displayDayIndex + 1) % 7;
             }
             const nextDayName = DAYS[nextMealDayIndex];
 
-            // SAVE DATA FOR MODAL
+            // SAVE DATA FOR DAY MODAL
             currentDayNameStr = dayName;
             currentDayMenuData = data.menu[dayName];
 
-            // Calculate Date String for Main Display
             const startParts = data.meta.weekStart.split('-');
             const startDate = new Date(startParts[0], startParts[1] - 1, startParts[2]);
             let offset = (displayDayIndex + 6) % 7;
@@ -585,7 +611,6 @@
             displayDate.setDate(startDate.getDate() + offset);
             const dateString = displayDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
 
-            // Get Food Strings
             let foodText = "Not listed";
             if (data.menu[dayName] && data.menu[dayName][targetMeal]) {
                 foodText = data.menu[dayName][targetMeal];
@@ -596,7 +621,6 @@
                 nextFoodText = data.menu[nextDayName][nextMeal];
             }
 
-            // Update DOM
             els.day.innerText = dayName.toUpperCase();
             els.date.innerText = dateString;
             els.type.innerText = targetMeal.toUpperCase();
@@ -613,10 +637,11 @@
             panels[name].style.display = 'block';
         }
 
+        // --- OPEN DAY MENU ---
         function openFullMenu() {
             if (!currentDayMenuData) return;
-            els.modalTitle.innerText = currentDayNameStr.toUpperCase() + " MENU";
-            els.modalList.innerHTML = ''; 
+            els.dayModalTitle.innerText = currentDayNameStr.toUpperCase() + " MENU";
+            els.dayModalList.innerHTML = ''; 
             const mealsOrder = ['Breakfast', 'Lunch', 'Snacks', 'Dinner'];
             
             mealsOrder.forEach(meal => {
@@ -631,13 +656,52 @@
                 content.innerText = food;
                 row.appendChild(label);
                 row.appendChild(content);
-                els.modalList.appendChild(row);
+                els.dayModalList.appendChild(row);
             });
-            els.modal.style.display = 'flex';
+            els.dayModal.style.display = 'flex';
         }
 
-        function closeFullMenu() {
-            els.modal.style.display = 'none';
+        // --- OPEN WEEK MENU ---
+        function openWeekMenu() {
+            if (!fullMenuData) return;
+            els.weekModalList.innerHTML = '';
+            
+            // Loop through all days in logical order (Mon -> Sun)
+            // But DAYS array starts with Sunday, so let's reorder: Mon-Sat, then Sun
+            const logicalOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+            const mealsOrder = ['Breakfast', 'Lunch', 'Snacks', 'Dinner'];
+
+            logicalOrder.forEach(day => {
+                if(!fullMenuData[day]) return;
+
+                // Create Day Header
+                const dayHeader = document.createElement('div');
+                dayHeader.className = 'day-header';
+                dayHeader.innerText = day;
+                els.weekModalList.appendChild(dayHeader);
+
+                // Create Meal Rows
+                mealsOrder.forEach(meal => {
+                    const food = fullMenuData[day][meal] || "Not listed";
+                    const row = document.createElement('div');
+                    row.className = 'menu-row';
+                    const label = document.createElement('div');
+                    label.className = 'menu-label';
+                    label.innerText = meal.toUpperCase();
+                    const content = document.createElement('div');
+                    content.className = 'menu-content';
+                    content.innerText = food;
+                    row.appendChild(label);
+                    row.appendChild(content);
+                    els.weekModalList.appendChild(row);
+                });
+            });
+
+            els.weekModal.style.display = 'flex';
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
         }
 
         window.addEventListener('load', checkMode);
