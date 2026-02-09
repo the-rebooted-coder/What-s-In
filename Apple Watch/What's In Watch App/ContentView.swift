@@ -17,8 +17,6 @@ class WatchViewModel: ObservableObject {
     @Published var currentMealType: String = "..."
     @Published var currentFood: String = "Loading..."
     @Published var currentDay: String = ""
-    @Published var nextMealType: String = ""
-    @Published var nextFood: String = ""
     @Published var isLoading: Bool = false
     @Published var fullMenu: [String: [String: String]] = [:]
     
@@ -26,9 +24,8 @@ class WatchViewModel: ObservableObject {
     let appBg = Color(red: 1.0, green: 0.99, blue: 0.94)       // Cream
     let appAccent = Color(red: 1.0, green: 0.42, blue: 0.42)   // Red
     let appPrimary = Color(red: 0.3, green: 0.8, blue: 0.77)   // Teal
-    let appSecondary = Color(red: 1.0, green: 0.9, blue: 0.42) // Yellow
     
-    // NEW: Dark Brown/Coffee Gradient (Matches cream better than black)
+    // Dark Brown Gradient (Essential for White System Text on Cream Background)
     let statusBarGradient = Color(red: 0.25, green: 0.22, blue: 0.18)
     
     let menuURL = "https://gist.githubusercontent.com/the-rebooted-coder/b2d795d38fff48d9aa4e15e65d818262/raw/menu.json"
@@ -85,21 +82,6 @@ class WatchViewModel: ObservableObject {
         } else {
             self.currentFood = "Not listed"
         }
-        
-        let allMeals = ["Breakfast", "Lunch", "Snacks", "Dinner"]
-        if let idx = allMeals.firstIndex(of: targetMeal) {
-            var nextM = ""
-            var nextD = targetDay
-            if idx < 3 { nextM = allMeals[idx + 1] }
-            else { nextM = "Breakfast" }
-            
-            self.nextMealType = nextM.uppercased()
-            if let dayMenu = data.menu[nextD], let nextF = dayMenu[nextM] {
-                self.nextFood = nextF
-            } else {
-                self.nextFood = "-"
-            }
-        }
     }
 }
 
@@ -127,77 +109,102 @@ struct NeoCard<Content: View>: View {
 // --- 4. SUB-SCREENS ---
 struct TodayView: View {
     @ObservedObject var vm: WatchViewModel
+    
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 15) {
-                Text("TODAY'S MENU")
-                    .font(.system(.headline, design: .monospaced))
-                    .fontWeight(.black)
-                    .foregroundColor(.black)
-                
-                if let dayMenu = vm.fullMenu[vm.currentDay] {
-                    ForEach(vm.mealOrder, id: \.self) { meal in
-                        if let food = dayMenu[meal] {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(meal.uppercased())
-                                    .font(.system(size: 10, design: .monospaced))
-                                    .fontWeight(.black)
-                                    .padding(3)
-                                    .background(Color.black)
-                                    .foregroundColor(.white)
-                                Text(food)
-                                    .font(.system(size: 14, design: .monospaced))
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.black)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                Divider().background(Color.black)
+        ZStack {
+            // Background Layer
+            vm.appBg.ignoresSafeArea()
+            
+            ScrollView {
+                VStack(alignment: .leading, spacing: 15) {
+                    if let dayMenu = vm.fullMenu[vm.currentDay] {
+                        ForEach(vm.mealOrder, id: \.self) { meal in
+                            if let food = dayMenu[meal] {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(meal.uppercased())
+                                        .font(.system(size: 10, design: .monospaced))
+                                        .fontWeight(.black)
+                                        .padding(3)
+                                        .background(Color.black)
+                                        .foregroundColor(.white)
+                                    Text(food)
+                                        .font(.system(size: 14, design: .monospaced))
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.black)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                    Divider().background(Color.black)
+                                }
                             }
                         }
+                    } else {
+                        Text("Loading...").foregroundColor(.black)
                     }
-                } else {
-                    Text("Loading...").foregroundColor(.black)
                 }
+                .padding()
             }
-            .padding()
+            
+            // GRADIENT FOR SYSTEM HEADER LEGIBILITY
+            // Native titles are white. This gradient ensures they are readable on cream.
+            VStack {
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        vm.statusBarGradient,
+                        vm.statusBarGradient.opacity(0.0)
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 50)
+                .edgesIgnoringSafeArea(.top)
+                .allowsHitTesting(false)
+                Spacer()
+            }
         }
-        .background(vm.appBg.ignoresSafeArea())
+        .navigationTitle("Today") // Native System Title
+        .navigationBarTitleDisplayMode(.large) // Uses standard large scrolling title
     }
 }
 
 struct WeekView: View {
     @ObservedObject var vm: WatchViewModel
+    
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                ForEach(vm.weekOrder, id: \.self) { day in
-                    if let dayMenu = vm.fullMenu[day] {
-                        VStack(alignment: .leading, spacing: 0) {
-                            Text(day.uppercased())
-                                .font(.system(.caption, design: .monospaced))
-                                .fontWeight(.black)
-                                .padding(5)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(Color.black)
-                                .foregroundColor(.white)
-                            VStack(spacing: 0) {
-                                ForEach(vm.mealOrder, id: \.self) { meal in
-                                    if let food = dayMenu[meal] {
-                                        HStack(alignment: .top) {
-                                            Text(meal.prefix(1))
-                                                .font(.system(size: 10, design: .monospaced))
-                                                .fontWeight(.bold)
-                                                .foregroundColor(.black)
-                                                .frame(width: 15)
-                                                .padding(.top, 2)
-                                            Text(food)
-                                                .font(.system(size: 12, design: .monospaced))
-                                                .foregroundColor(.black)
-                                                .fixedSize(horizontal: false, vertical: true)
-                                            Spacer()
+        ZStack {
+            // Background Layer
+            vm.appBg.ignoresSafeArea()
+            
+            ScrollView {
+                VStack(spacing: 20) {
+                    ForEach(vm.weekOrder, id: \.self) { day in
+                        if let dayMenu = vm.fullMenu[day] {
+                            VStack(alignment: .leading, spacing: 0) {
+                                Text(day.uppercased())
+                                    .font(.system(.caption, design: .monospaced))
+                                    .fontWeight(.black)
+                                    .padding(5)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .background(Color.black)
+                                    .foregroundColor(.white)
+                                VStack(spacing: 0) {
+                                    ForEach(vm.mealOrder, id: \.self) { meal in
+                                        if let food = dayMenu[meal] {
+                                            HStack(alignment: .top) {
+                                                Text(meal.prefix(1))
+                                                    .font(.system(size: 10, design: .monospaced))
+                                                    .fontWeight(.bold)
+                                                    .foregroundColor(.black)
+                                                    .frame(width: 15)
+                                                    .padding(.top, 2)
+                                                Text(food)
+                                                    .font(.system(size: 12, design: .monospaced))
+                                                    .foregroundColor(.black)
+                                                    .fixedSize(horizontal: false, vertical: true)
+                                                Spacer()
+                                            }
+                                            .padding(.vertical, 6)
+                                            .padding(.horizontal, 4)
+                                            Divider().background(Color.black)
                                         }
-                                        .padding(.vertical, 6)
-                                        .padding(.horizontal, 4)
-                                        Divider().background(Color.black)
                                     }
                                 }
                             }
@@ -206,10 +213,27 @@ struct WeekView: View {
                         }
                     }
                 }
+                .padding()
             }
-            .padding()
+            
+            // GRADIENT FOR SYSTEM HEADER LEGIBILITY
+            VStack {
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        vm.statusBarGradient,
+                        vm.statusBarGradient.opacity(0.0)
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 50)
+                .edgesIgnoringSafeArea(.top)
+                .allowsHitTesting(false)
+                Spacer()
+            }
         }
-        .background(vm.appBg.ignoresSafeArea())
+        .navigationTitle("This Week") // Native System Title
+        .navigationBarTitleDisplayMode(.large)
     }
 }
 
@@ -228,7 +252,7 @@ struct ContentView: View {
                 ScrollView {
                     VStack(spacing: 12) {
                         
-                        // Header (BUTTON REMOVED)
+                        // Header
                         HStack {
                             Text("WHAT'S IN")
                                 .font(.system(size: 26, weight: .black, design: .default))
@@ -236,12 +260,11 @@ struct ContentView: View {
                                 .foregroundColor(.black)
                             Spacer()
                             
-                            // Only showing loading indicator if needed
                             if vm.isLoading {
                                 ProgressView().scaleEffect(0.5)
                             }
                         }
-                        .padding(.top, 25)
+                        .padding(.top, 10)
                         
                         // Main Card
                         NeoCard(color: .white) {
@@ -266,27 +289,8 @@ struct ContentView: View {
                             }
                         }
                         
-                        // Next Up
-                        HStack(spacing: 0) {
-                            Text("NEXT:")
-                                .font(.system(size: 11, design: .monospaced))
-                                .fontWeight(.black)
-                                .padding(4)
-                                .background(Color.black)
-                                .foregroundColor(.white)
-                            Text(vm.nextMealType)
-                                .font(.system(size: 11, design: .monospaced))
-                                .fontWeight(.bold)
-                                .padding(4)
-                                .background(vm.appSecondary)
-                                .foregroundColor(.black)
-                                .overlay(Rectangle().stroke(Color.black, lineWidth: 2))
-                            Spacer()
-                        }
-                        
                         // Navigation Buttons
                         HStack(spacing: 10) {
-                            // TODAY BUTTON (Bound to showToday state)
                             NavigationLink(destination: TodayView(vm: vm), isActive: $showToday) {
                                 ZStack {
                                     Rectangle().fill(Color.white)
@@ -301,7 +305,6 @@ struct ContentView: View {
                             }
                             .buttonStyle(PlainButtonStyle())
                             
-                            // WEEK BUTTON
                             NavigationLink(destination: WeekView(vm: vm)) {
                                 ZStack {
                                     Rectangle().fill(vm.appPrimary)
@@ -325,23 +328,25 @@ struct ContentView: View {
                     showToday = true
                 }
                 
-                // 3. STATUS BAR GRADIENT (DARK BROWN)
+                // 3. STATUS BAR GRADIENT (Main Screen)
                 VStack {
                     LinearGradient(
                         gradient: Gradient(colors: [
-                            vm.statusBarGradient, // Dark Brown
+                            vm.statusBarGradient,
                             vm.statusBarGradient.opacity(0.0)
                         ]),
                         startPoint: .top,
                         endPoint: .bottom
                     )
-                    .frame(height: 35)
+                    .frame(height: 40)
                     .edgesIgnoringSafeArea(.top)
                     .allowsHitTesting(false)
                     
                     Spacer()
                 }
             }
+            // Hide nav bar ONLY on root, allow it on sub-screens
+            .navigationBarHidden(true)
         }
         .onAppear {
             vm.refresh()
