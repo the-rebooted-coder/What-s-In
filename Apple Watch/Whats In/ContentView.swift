@@ -16,20 +16,21 @@ struct Meta: Codable {
 class HapticManager {
     static let shared = HapticManager()
     
-    // Custom "Mechanical Click"
+    // Fixed: Added missing methods for the button style
     func click() {
         let generator = UIImpactFeedbackGenerator(style: .rigid)
         generator.prepare()
         generator.impactOccurred(intensity: 1.0)
     }
     
-    // Custom "Spring Release"
     func release() {
         let generator = UIImpactFeedbackGenerator(style: .soft)
         generator.prepare()
         generator.impactOccurred(intensity: 0.6)
     }
     
+    func medium() { UIImpactFeedbackGenerator(style: .medium).impactOccurred() }
+    func light() { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
     func success() { UINotificationFeedbackGenerator().notificationOccurred(.success) }
 }
 
@@ -42,48 +43,7 @@ struct DashedLine: Shape {
     }
 }
 
-// --- 3. CUSTOM BUTTON STYLES (THE NEW MAGIC) ---
-struct NeoPressStyle: ButtonStyle {
-    let color: Color
-    
-    func makeBody(configuration: Configuration) -> some View {
-        ZStack {
-            // 1. The Static Shadow (Always stays put)
-            Rectangle()
-                .fill(Color.black)
-                .offset(x: 4, y: 4) // Fixed offset for the "hole"
-            
-            // 2. The Moving Button
-            Rectangle()
-                .fill(color)
-                .overlay(Rectangle().stroke(Color.black, lineWidth: 3))
-                .overlay(
-                    configuration.label
-                        .font(.system(size: 16, weight: .black))
-                        .foregroundColor(.black)
-                )
-                // MECHANICAL MOVEMENT:
-                // If pressed: Move to (4,4) (flush with shadow)
-                // If not: Move to (0,0) (hovering above)
-                .offset(
-                    x: configuration.isPressed ? 4 : 0,
-                    y: configuration.isPressed ? 4 : 0
-                )
-        }
-        .frame(height: 55) // Short, tight height
-        // Snappy spring animation
-        .animation(.spring(response: 0.2, dampingFraction: 0.5, blendDuration: 0), value: configuration.isPressed)
-        .onChange(of: configuration.isPressed) { isPressed in
-            if isPressed {
-                HapticManager.shared.click() // CRUNCH
-            } else {
-                HapticManager.shared.release() // SPRING BACK
-            }
-        }
-    }
-}
-
-// --- 4. VIEWMODEL ---
+// --- 3. VIEWMODEL ---
 @MainActor
 class IOSViewModel: ObservableObject {
     @Published var currentMealType: String = "LOADING..."
@@ -113,7 +73,9 @@ class IOSViewModel: ObservableObject {
             isLoading = false
             return
         }
+        
         defer { DispatchQueue.main.async { self.isLoading = false } }
+        
         let urlString = force ? "\(menuURL)?t=\(Date().timeIntervalSince1970)" : menuURL
         guard let url = URL(string: urlString) else { return }
         
@@ -122,6 +84,7 @@ class IOSViewModel: ObservableObject {
             let decoded = try JSONDecoder().decode(MenuResponse.self, from: data)
             self.fullMenu = decoded.menu
             self.calculateCurrentMeal(data: decoded)
+            
             if force {
                 DispatchQueue.main.async {
                     HapticManager.shared.success()
@@ -179,6 +142,7 @@ class IOSViewModel: ObservableObject {
             self.currentFood = "Not listed"
         }
         
+        // Next Meal Logic
         let allMeals = ["Breakfast", "Lunch", "Snacks", "Dinner"]
         if let idx = allMeals.firstIndex(of: targetMeal) {
             var nextM = ""
@@ -195,8 +159,9 @@ class IOSViewModel: ObservableObject {
     }
 }
 
-// --- 5. REUSABLE UI COMPONENTS ---
+// --- 4. REUSABLE UI COMPONENTS ---
 
+// Fixed Container with Proper Spacing for Shadow
 struct NeoContainer<Content: View>: View {
     let color: Color
     let content: Content
@@ -222,33 +187,65 @@ struct NeoMealRow: View {
     let isLast: Bool
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 0) {
+            // Label
             Text(label.uppercased())
                 .font(.system(size: 13, weight: .black))
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
                 .background(Color.black)
                 .foregroundColor(.white)
+                .padding(.bottom, 8)
             
+            // Food Text
             Text(food)
                 .font(.custom("CourierNewPS-BoldMT", size: 18))
                 .foregroundColor(.black)
                 .fixedSize(horizontal: false, vertical: true)
-                .lineSpacing(2)
+                .lineSpacing(4) // Better line height for readability
+                .frame(maxWidth: .infinity, alignment: .leading) // Ensure left alignment
             
+            // Divider Logic
             if !isLast {
-                DashedLine()
-                    .stroke(style: StrokeStyle(lineWidth: 2, dash: [6]))
-                    .frame(height: 1)
-                    .foregroundColor(.black)
-                    .padding(.top, 8)
-                    .padding(.bottom, 8)
+                VStack(spacing: 0) {
+                    Spacer().frame(height: 15) // Spacing before line
+                    DashedLine()
+                        .stroke(style: StrokeStyle(lineWidth: 2, dash: [6]))
+                        .frame(height: 1)
+                        .foregroundColor(.black)
+                    Spacer().frame(height: 15) // Spacing after line
+                }
             }
         }
     }
 }
 
-// --- 6. MODALS & SUB-SCREENS ---
+// Instant Click Button Style
+struct NeoPressStyle: ButtonStyle {
+    var color: Color = .white
+    
+    func makeBody(configuration: Configuration) -> some View {
+        ZStack {
+            Rectangle().fill(Color.black).offset(x: 4, y: 4)
+            configuration.label
+                .background(color)
+                .overlay(Rectangle().stroke(Color.black, lineWidth: 3))
+                .offset(
+                    x: configuration.isPressed ? 4 : 0,
+                    y: configuration.isPressed ? 4 : 0
+                )
+        }
+        .frame(height: 60)
+        .padding(.trailing, 4).padding(.bottom, 4)
+        .animation(.easeInOut(duration: 0.05), value: configuration.isPressed)
+        .onChange(of: configuration.isPressed) { isPressed in
+            if isPressed { HapticManager.shared.click() }
+            else { HapticManager.shared.release() }
+        }
+    }
+}
+
+// --- 5. MODALS & SUB-SCREENS ---
 
 struct NextMealModal: View {
     @ObservedObject var vm: IOSViewModel
@@ -303,6 +300,7 @@ struct TodayListView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
+                // Header (No Shadow)
                 HStack {
                     Text(vm.currentDay.uppercased())
                         .font(.system(size: 32, weight: .black))
@@ -313,13 +311,19 @@ struct TodayListView: View {
                 .background(vm.appSecondary)
                 .overlay(Rectangle().stroke(Color.black, lineWidth: 3))
                 
-                VStack(spacing: 20) {
+                // List (Clean White Box)
+                VStack(alignment: .leading, spacing: 0) {
                     if let dayMenu = vm.fullMenu[vm.currentDay] {
                         ForEach(Array(vm.mealOrder.enumerated()), id: \.offset) { index, meal in
                             if let food = dayMenu[meal] {
-                                NeoMealRow(label: meal, food: food, isLast: index == vm.mealOrder.count - 1)
+                                VStack(alignment: .leading, spacing: 0) {
+                                    NeoMealRow(label: meal, food: food, isLast: index == vm.mealOrder.count - 1)
+                                }
+                                .padding(.bottom, 5)
                             }
                         }
+                    } else {
+                        Text("Loading...").foregroundColor(.black).padding()
                     }
                 }
                 .padding(25)
@@ -339,6 +343,7 @@ struct WeekListView: View {
             VStack(spacing: 30) {
                 ForEach(vm.weekOrder, id: \.self) { day in
                     if let dayMenu = vm.fullMenu[day] {
+                        // Week Item (No Shadow Box, just flat style)
                         VStack(spacing: 0) {
                             HStack {
                                 Text(day.uppercased())
@@ -388,7 +393,7 @@ struct WeekListView: View {
     }
 }
 
-// --- 7. MAIN CONTENT ---
+// --- 6. MAIN CONTENT ---
 struct ContentView: View {
     @StateObject private var vm = IOSViewModel()
     @State private var showNextMealModal = false
@@ -414,9 +419,9 @@ struct ContentView: View {
                     .padding(.bottom, 20)
                     
                     ScrollView {
-                        VStack(spacing: 30) {
+                        VStack(spacing: 50) { // Large spacing for separation
                             
-                            // 1. CURRENT MEAL
+                            // 1. CURRENT MEAL CARD
                             NeoContainer(color: .white) {
                                 VStack(alignment: .leading, spacing: 10) {
                                     HStack(alignment: .top) {
@@ -452,8 +457,7 @@ struct ContentView: View {
                                 }
                             }
                             
-                            // 2. NEXT MEAL (Clickable)
-                            // Note: Wrapping in Button to use NeoPressStyle, but disabling default overlay
+                            // 2. NEXT MEAL (Button Wrapper)
                             Button(action: {
                                 withAnimation(.spring()) { showNextMealModal = true }
                             }) {
@@ -478,30 +482,36 @@ struct ContentView: View {
                                     }
                                 }
                             }
-                            .buttonStyle(NeoPressStyle(color: vm.appSecondary)) // NEW: Mechanical Click
+                            .buttonStyle(NeoPressStyle(color: .clear)) // Passes clear because NeoContainer handles color
                             
                             // 3. NAVIGATION BUTTONS
                             HStack(spacing: 20) {
                                 NavigationLink(destination: TodayListView(vm: vm)) {
                                     Text("VIEW TODAY")
+                                        .font(.system(size: 16, weight: .black))
                                         .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                        .foregroundColor(.black)
                                 }
-                                .buttonStyle(NeoPressStyle(color: .white)) // NEW: Mechanical Click
+                                .buttonStyle(NeoPressStyle(color: .white)) // White Button
                                 
                                 NavigationLink(destination: WeekListView(vm: vm)) {
                                     Text("FULL WEEK")
+                                        .font(.system(size: 16, weight: .black))
                                         .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                        .foregroundColor(.black)
                                 }
-                                .buttonStyle(NeoPressStyle(color: vm.appPrimary)) // NEW: Mechanical Click
+                                .buttonStyle(NeoPressStyle(color: vm.appPrimary)) // Teal Button
                             }
                             .padding(.bottom, 20)
                         }
                         .padding(.horizontal, 20)
                     }
-                    .refreshable { await vm.refresh(force: true) }
+                    .refreshable {
+                        await vm.refresh(force: true)
+                    }
                 }
                 
-                // REFRESH TOAST (Shadow fixed)
+                // REFRESH TOAST (Fixed Shadow)
                 if vm.showRefreshSuccess {
                     VStack {
                         HStack(spacing: 12) {
@@ -509,9 +519,13 @@ struct ContentView: View {
                             Text("Latest Menu Fetched").font(.system(size: 14, weight: .bold))
                         }
                         .padding(.vertical, 12).padding(.horizontal, 20)
-                        .background(vm.appBg)
-                        .overlay(Rectangle().stroke(Color.black, lineWidth: 3))
-                        .background(Color.black.offset(x: 4, y: 4)) // SHADOW ON BG ONLY
+                        .background(
+                            ZStack {
+                                vm.appBg
+                                Rectangle().stroke(Color.black, lineWidth: 3)
+                            }
+                            .shadow(color: .black, radius: 0, x: 4, y: 4)
+                        )
                         .foregroundColor(.black)
                         .padding(.top, 10)
                         .transition(.move(edge: .top).combined(with: .opacity))
