@@ -205,7 +205,7 @@ class IOSViewModel: ObservableObject {
     }
 }
 
-// --- 5. UI COMPONENTS (NEO BRUTALISM & LIQUID GLASS) ---
+// --- 5. UI COMPONENTS (NEO BRUTALISM) ---
 
 struct NeoContainer<Content: View>: View {
     let color: Color
@@ -280,81 +280,88 @@ struct NeoPressStyle: ButtonStyle {
     }
 }
 
-// --- LIQUID GLASS TAB BAR ---
-enum Tab {
-    case home, today, week
+// --- NEW LIQUID GLASS FLOATING NAV ---
+
+enum Tab: String, CaseIterable {
+    case home = "Home"
+    case today = "Today"
+    case week = "Week"
+    
+    var icon: String {
+        switch self {
+        case .home: return "house"
+        case .today: return "list.bullet.rectangle.portrait"
+        case .week: return "calendar"
+        }
+    }
 }
 
-struct LiquidNavBar: View {
+struct LiquidFloatingNavBar: View {
     @Binding var selectedTab: Tab
+    @Namespace private var animationNamespace
     
     var body: some View {
         HStack(spacing: 0) {
-            Spacer()
-            tabButton(tab: .home, icon: "house.fill", title: "HOME")
-            Spacer()
-            tabButton(tab: .today, icon: "list.bullet.rectangle.portrait.fill", title: "TODAY")
-            Spacer()
-            tabButton(tab: .week, icon: "calendar", title: "WEEK")
-            Spacer()
+            ForEach(Tab.allCases, id: \.self) { tab in
+                Button {
+                    HapticManager.shared.light()
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                        selectedTab = tab
+                    }
+                } label: {
+                    ZStack {
+                        if selectedTab == tab {
+                            // The "Liquid" Background Blob
+                            RoundedRectangle(cornerRadius: 25)
+                                .fill(Color.black)
+                                .matchedGeometryEffect(id: "liquid_blob", in: animationNamespace)
+                                .padding(4)
+                        }
+                        
+                        HStack(spacing: 8) {
+                            Image(systemName: selectedTab == tab ? tab.icon + ".fill" : tab.icon)
+                                .font(.system(size: 18, weight: selectedTab == tab ? .semibold : .medium))
+                                .scaleEffect(selectedTab == tab ? 1.0 : 0.9)
+                            
+                            if selectedTab == tab {
+                                Text(tab.rawValue.uppercased())
+                                    .font(.system(size: 12, weight: .bold))
+                            }
+                        }
+                        .foregroundColor(selectedTab == tab ? .white : .black.opacity(0.6))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                    }
+                    .frame(height: 55)
+                    // Ensure touch target is generous
+                    .contentShape(Rectangle())
+                }
+            }
         }
-        .padding(.vertical, 16)
-        .padding(.bottom, 20) // Extra padding for safe area
-        .background(.ultraThinMaterial) // The "Liquid" Glass Effect
-        .cornerRadius(30, corners: [.topLeft, .topRight])
-        .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: -5)
+        .padding(5)
+        .background(
+            // Glass Material
+            Material.ultraThin
+        )
+        .clipShape(Capsule())
+        // iOS 26 style subtle glass border
         .overlay(
-            RoundedCorner(radius: 30, corners: [.topLeft, .topRight])
+            Capsule()
                 .stroke(
                     LinearGradient(
-                        gradient: Gradient(colors: [.white.opacity(0.6), .white.opacity(0.1)]),
-                        startPoint: .top,
-                        endPoint: .bottom
+                        colors: [.white.opacity(0.6), .white.opacity(0.1)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
                     ),
                     lineWidth: 1
                 )
         )
-    }
-    
-    func tabButton(tab: Tab, icon: String, title: String) -> some View {
-        Button(action: {
-            HapticManager.shared.light()
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                selectedTab = tab
-            }
-        }) {
-            VStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.system(size: 22, weight: selectedTab == tab ? .bold : .regular))
-                    .foregroundColor(selectedTab == tab ? .black : .gray)
-                    .scaleEffect(selectedTab == tab ? 1.1 : 1.0)
-                
-                Text(title)
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundColor(selectedTab == tab ? .black : .gray)
-            }
-            .frame(width: 60)
-        }
+        // Floating shadow
+        .shadow(color: Color.black.opacity(0.15), radius: 20, x: 0, y: 10)
+        .padding(.horizontal, 24)
+        .padding(.bottom, 16)
     }
 }
-
-// Helper for specific corner radius
-struct RoundedCorner: Shape {
-    var radius: CGFloat = .infinity
-    var corners: UIRectCorner = .allCorners
-
-    func path(in rect: CGRect) -> Path {
-        let path = UIBezierPath(roundedRect: rect, byRoundingCorners: corners, cornerRadii: CGSize(width: radius, height: radius))
-        return Path(path.cgPath)
-    }
-}
-
-extension View {
-    func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
-        clipShape(RoundedCorner(radius: radius, corners: corners))
-    }
-}
-
 
 // --- 6. MODALS & SCREENS ---
 
@@ -405,7 +412,7 @@ struct NextMealModal: View {
     }
 }
 
-// --- REFACTORED VIEWS FOR TAB SWITCHING ---
+// --- REFACTORED VIEWS (Bottom Padding Increased for Floating Nav) ---
 
 struct HomeView: View {
     @ObservedObject var vm: IOSViewModel
@@ -425,7 +432,7 @@ struct HomeView: View {
                     if vm.isLoading { ProgressView().tint(.black) }
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 60) // Adjusted for safe area
+                .padding(.top, 60)
                 .padding(.bottom, 20)
                 
                 VStack(spacing: 50) {
@@ -492,8 +499,8 @@ struct HomeView: View {
                     }
                     .buttonStyle(NeoPressStyle(color: .clear))
                     
-                    // Spacer for bottom tab bar
-                    Spacer().frame(height: 100)
+                    // Extra spacer for floating nav
+                    Spacer().frame(height: 120)
                 }
                 .padding(.horizontal, 20)
             }
@@ -536,7 +543,7 @@ struct TodayListView: View {
                 .overlay(Rectangle().stroke(Color.black, lineWidth: 3))
                 .padding(20)
                 
-                Spacer().frame(height: 100)
+                Spacer().frame(height: 120)
             }
         }
     }
@@ -554,7 +561,7 @@ struct WeekListView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 20)
                     .padding(.top, 60)
-
+                
                 ForEach(vm.weekOrder, id: \.self) { day in
                     if let dayMenu = vm.fullMenu[day] {
                         VStack(spacing: 0) {
@@ -599,7 +606,7 @@ struct WeekListView: View {
                         .padding(.horizontal, 20)
                     }
                 }
-                Spacer().frame(height: 100)
+                Spacer().frame(height: 120)
             }
             .padding(.vertical, 20)
         }
@@ -628,15 +635,16 @@ struct ContentView: View {
                     WeekListView(vm: vm)
                 }
             }
-            // Add subtle animation for tab transitions
-            .transition(.opacity.animation(.easeInOut(duration: 0.2)))
+            // Liquid transition animation
+            .animation(.easeInOut(duration: 0.2), value: selectedTab)
+            .transition(.opacity)
             
-            // Bottom Liquid Navigation Bar
+            // Bottom Liquid Floating Navigation Bar
             VStack {
                 Spacer()
-                LiquidNavBar(selectedTab: $selectedTab)
+                LiquidFloatingNavBar(selectedTab: $selectedTab)
             }
-            .ignoresSafeArea(.all, edges: .bottom)
+            // No ignoresSafeArea here on purpose to let it float above the home indicator
             
             // Success Toast
             if vm.showRefreshSuccess {
