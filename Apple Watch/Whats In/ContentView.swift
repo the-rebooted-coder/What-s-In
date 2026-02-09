@@ -17,7 +17,6 @@ struct Meta: Codable {
 class HapticManager {
     static let shared = HapticManager()
     
-    // FIXED: Added missing methods for mechanical feel
     func click() {
         let generator = UIImpactFeedbackGenerator(style: .rigid)
         generator.prepare()
@@ -48,7 +47,6 @@ struct DashedLine: Shape {
 class NotificationManager {
     static let shared = NotificationManager()
     
-    // Time settings (24h format)
     let schedules = [
         "Breakfast": (hour: 8, minute: 0),
         "Lunch":     (hour: 13, minute: 0),
@@ -207,7 +205,7 @@ class IOSViewModel: ObservableObject {
     }
 }
 
-// --- 5. REUSABLE UI COMPONENTS ---
+// --- 5. UI COMPONENTS (NEO BRUTALISM & LIQUID GLASS) ---
 
 struct NeoContainer<Content: View>: View {
     let color: Color
@@ -282,7 +280,83 @@ struct NeoPressStyle: ButtonStyle {
     }
 }
 
-// --- 6. MODALS & SUB-SCREENS ---
+// --- LIQUID GLASS TAB BAR ---
+enum Tab {
+    case home, today, week
+}
+
+struct LiquidNavBar: View {
+    @Binding var selectedTab: Tab
+    
+    var body: some View {
+        HStack(spacing: 0) {
+            Spacer()
+            tabButton(tab: .home, icon: "house.fill", title: "HOME")
+            Spacer()
+            tabButton(tab: .today, icon: "list.bullet.rectangle.portrait.fill", title: "TODAY")
+            Spacer()
+            tabButton(tab: .week, icon: "calendar", title: "WEEK")
+            Spacer()
+        }
+        .padding(.vertical, 16)
+        .padding(.bottom, 20) // Extra padding for safe area
+        .background(.ultraThinMaterial) // The "Liquid" Glass Effect
+        .cornerRadius(30, corners: [.topLeft, .topRight])
+        .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: -5)
+        .overlay(
+            RoundedCorner(radius: 30, corners: [.topLeft, .topRight])
+                .stroke(
+                    LinearGradient(
+                        gradient: Gradient(colors: [.white.opacity(0.6), .white.opacity(0.1)]),
+                        startPoint: .top,
+                        endPoint: .bottom
+                    ),
+                    lineWidth: 1
+                )
+        )
+    }
+    
+    func tabButton(tab: Tab, icon: String, title: String) -> some View {
+        Button(action: {
+            HapticManager.shared.light()
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                selectedTab = tab
+            }
+        }) {
+            VStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 22, weight: selectedTab == tab ? .bold : .regular))
+                    .foregroundColor(selectedTab == tab ? .black : .gray)
+                    .scaleEffect(selectedTab == tab ? 1.1 : 1.0)
+                
+                Text(title)
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(selectedTab == tab ? .black : .gray)
+            }
+            .frame(width: 60)
+        }
+    }
+}
+
+// Helper for specific corner radius
+struct RoundedCorner: Shape {
+    var radius: CGFloat = .infinity
+    var corners: UIRectCorner = .allCorners
+
+    func path(in rect: CGRect) -> Path {
+        let path = UIBezierPath(roundedRect: rect, byRoundingCorners: corners, cornerRadii: CGSize(width: radius, height: radius))
+        return Path(path.cgPath)
+    }
+}
+
+extension View {
+    func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
+        clipShape(RoundedCorner(radius: radius, corners: corners))
+    }
+}
+
+
+// --- 6. MODALS & SCREENS ---
 
 struct NextMealModal: View {
     @ObservedObject var vm: IOSViewModel
@@ -331,8 +405,106 @@ struct NextMealModal: View {
     }
 }
 
+// --- REFACTORED VIEWS FOR TAB SWITCHING ---
+
+struct HomeView: View {
+    @ObservedObject var vm: IOSViewModel
+    @Binding var showNextMealModal: Bool
+    
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                // Header
+                HStack {
+                    Text("WHAT'S IN")
+                        .font(.system(size: 40, weight: .black))
+                        .tracking(-2)
+                        .italic()
+                        .foregroundColor(.black)
+                    Spacer()
+                    if vm.isLoading { ProgressView().tint(.black) }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 60) // Adjusted for safe area
+                .padding(.bottom, 20)
+                
+                VStack(spacing: 50) {
+                    // Current Meal Card
+                    NeoContainer(color: .white) {
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack(alignment: .top) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("UPCOMING MEAL")
+                                        .font(.system(size: 12, weight: .bold))
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 3)
+                                        .background(Color.black)
+                                        .foregroundColor(.white)
+                                    HStack(alignment: .lastTextBaseline, spacing: 8) {
+                                        Text(vm.currentDay.uppercased())
+                                            .font(.system(size: 28, weight: .black))
+                                            .foregroundColor(.black)
+                                        Text(vm.currentDateString)
+                                            .font(.system(size: 18, weight: .bold))
+                                            .foregroundColor(.gray)
+                                    }
+                                }
+                                Spacer()
+                                Text(vm.currentMealType)
+                                    .font(.system(size: 14, weight: .black))
+                                    .padding(6)
+                                    .background(vm.appAccent)
+                                    .foregroundColor(.black)
+                                    .overlay(Rectangle().stroke(Color.black, lineWidth: 2))
+                            }
+                            Rectangle().frame(height: 4).foregroundColor(.black)
+                            Text(vm.currentFood)
+                                .font(.custom("CourierNewPS-BoldMT", size: 32))
+                                .foregroundColor(.black)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    
+                    // Next Meal Preview Button
+                    Button(action: {
+                        withAnimation(.spring()) { showNextMealModal = true }
+                    }) {
+                        NeoContainer(color: vm.appSecondary) {
+                            HStack {
+                                VStack(alignment: .leading) {
+                                    Text("COMING UP NEXT:")
+                                        .font(.system(size: 12, weight: .black))
+                                        .padding(4)
+                                        .background(Color.black)
+                                        .foregroundColor(.white)
+                                    Text(vm.nextMealType)
+                                        .font(.system(size: 24, weight: .black))
+                                        .foregroundColor(.black)
+                                    Text(vm.nextFood)
+                                        .font(.custom("CourierNewPS-BoldMT", size: 16))
+                                        .foregroundColor(.black.opacity(0.8))
+                                        .lineLimit(1)
+                                }
+                                Spacer()
+                                Image(systemName: "eye.fill").font(.title2).foregroundColor(.black)
+                            }
+                        }
+                    }
+                    .buttonStyle(NeoPressStyle(color: .clear))
+                    
+                    // Spacer for bottom tab bar
+                    Spacer().frame(height: 100)
+                }
+                .padding(.horizontal, 20)
+            }
+        }
+        .refreshable { await vm.refresh(force: true) }
+    }
+}
+
 struct TodayListView: View {
     @ObservedObject var vm: IOSViewModel
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
@@ -345,6 +517,7 @@ struct TodayListView: View {
                 .padding(20)
                 .background(vm.appSecondary)
                 .overlay(Rectangle().stroke(Color.black, lineWidth: 3))
+                .padding(.top, 60)
                 
                 VStack(spacing: 20) {
                     if let dayMenu = vm.fullMenu[vm.currentDay] {
@@ -361,18 +534,27 @@ struct TodayListView: View {
                 .padding(25)
                 .background(Color.white)
                 .overlay(Rectangle().stroke(Color.black, lineWidth: 3))
+                .padding(20)
+                
+                Spacer().frame(height: 100)
             }
-            .padding(20)
         }
-        .background(vm.appBg.ignoresSafeArea())
     }
 }
 
 struct WeekListView: View {
     @ObservedObject var vm: IOSViewModel
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 30) {
+                Text("FULL WEEK")
+                    .font(.system(size: 30, weight: .black))
+                    .italic()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 60)
+
                 ForEach(vm.weekOrder, id: \.self) { day in
                     if let dayMenu = vm.fullMenu[day] {
                         VStack(spacing: 0) {
@@ -417,10 +599,10 @@ struct WeekListView: View {
                         .padding(.horizontal, 20)
                     }
                 }
+                Spacer().frame(height: 100)
             }
             .padding(.vertical, 20)
         }
-        .background(vm.appBg.ignoresSafeArea())
     }
 }
 
@@ -428,138 +610,61 @@ struct WeekListView: View {
 struct ContentView: View {
     @StateObject private var vm = IOSViewModel()
     @State private var showNextMealModal = false
+    @State private var selectedTab: Tab = .home
     
     var body: some View {
-        NavigationView {
-            ZStack {
-                vm.appBg.ignoresSafeArea()
-                
-                VStack(spacing: 0) {
-                    HStack {
-                        Text("WHAT'S IN")
-                            .font(.system(size: 40, weight: .black))
-                            .tracking(-2)
-                            .italic()
-                            .foregroundColor(.black)
-                        Spacer()
-                        if vm.isLoading { ProgressView().tint(.black) }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 10)
-                    .padding(.bottom, 20)
-                    
-                    ScrollView {
-                        VStack(spacing: 50) {
-                            NeoContainer(color: .white) {
-                                VStack(alignment: .leading, spacing: 10) {
-                                    HStack(alignment: .top) {
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Text("UPCOMING MEAL")
-                                                .font(.system(size: 12, weight: .bold))
-                                                .padding(.horizontal, 6)
-                                                .padding(.vertical, 3)
-                                                .background(Color.black)
-                                                .foregroundColor(.white)
-                                            HStack(alignment: .lastTextBaseline, spacing: 8) {
-                                                Text(vm.currentDay.uppercased())
-                                                    .font(.system(size: 28, weight: .black))
-                                                    .foregroundColor(.black)
-                                                Text(vm.currentDateString)
-                                                    .font(.system(size: 18, weight: .bold))
-                                                    .foregroundColor(.gray)
-                                            }
-                                        }
-                                        Spacer()
-                                        Text(vm.currentMealType)
-                                            .font(.system(size: 14, weight: .black))
-                                            .padding(6)
-                                            .background(vm.appAccent)
-                                            .foregroundColor(.black)
-                                            .overlay(Rectangle().stroke(Color.black, lineWidth: 2))
-                                    }
-                                    Rectangle().frame(height: 4).foregroundColor(.black)
-                                    Text(vm.currentFood)
-                                        .font(.custom("CourierNewPS-BoldMT", size: 32))
-                                        .foregroundColor(.black)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                }
-                            }
-                            
-                            Button(action: {
-                                withAnimation(.spring()) { showNextMealModal = true }
-                            }) {
-                                NeoContainer(color: vm.appSecondary) {
-                                    HStack {
-                                        VStack(alignment: .leading) {
-                                            Text("COMING UP NEXT:")
-                                                .font(.system(size: 12, weight: .black))
-                                                .padding(4)
-                                                .background(Color.black)
-                                                .foregroundColor(.white)
-                                            Text(vm.nextMealType)
-                                                .font(.system(size: 24, weight: .black))
-                                                .foregroundColor(.black)
-                                            Text(vm.nextFood)
-                                                .font(.custom("CourierNewPS-BoldMT", size: 16))
-                                                .foregroundColor(.black.opacity(0.8))
-                                                .lineLimit(1)
-                                        }
-                                        Spacer()
-                                        Image(systemName: "eye.fill").font(.title2).foregroundColor(.black)
-                                    }
-                                }
-                            }
-                            .buttonStyle(NeoPressStyle(color: .clear))
-                            
-                            HStack(spacing: 20) {
-                                NavigationLink(destination: TodayListView(vm: vm)) {
-                                    Text("VIEW TODAY")
-                                        .font(.system(size: 16, weight: .black))
-                                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                }
-                                .buttonStyle(NeoPressStyle(color: .white))
-                                
-                                NavigationLink(destination: WeekListView(vm: vm)) {
-                                    Text("FULL WEEK")
-                                        .font(.system(size: 16, weight: .black))
-                                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                }
-                                .buttonStyle(NeoPressStyle(color: vm.appPrimary))
-                            }
-                            .padding(.bottom, 40)
-                        }
-                        .padding(.horizontal, 20)
-                    }
-                    .refreshable { await vm.refresh(force: true) }
-                }
-                
-                if vm.showRefreshSuccess {
-                    VStack {
-                        HStack(spacing: 12) {
-                            Image(systemName: "checkmark.circle.fill").font(.title3)
-                            Text("Latest Menu Fetched").font(.system(size: 14, weight: .bold))
-                        }
-                        .padding(.vertical, 12).padding(.horizontal, 20)
-                        .background(ZStack { vm.appBg; Rectangle().stroke(Color.black, lineWidth: 3) }.shadow(color: .black, radius: 0, x: 4, y: 4))
-                        .foregroundColor(.black)
-                        .padding(.top, 10)
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                        Spacer()
-                    }
-                    .zIndex(200)
-                }
-                
-                if showNextMealModal {
-                    NextMealModal(vm: vm, isPresented: $showNextMealModal).zIndex(100)
+        ZStack {
+            // Background
+            vm.appBg.ignoresSafeArea()
+            
+            // Main Content Logic
+            Group {
+                switch selectedTab {
+                case .home:
+                    HomeView(vm: vm, showNextMealModal: $showNextMealModal)
+                case .today:
+                    TodayListView(vm: vm)
+                case .week:
+                    WeekListView(vm: vm)
                 }
             }
-            .onAppear {
-                NotificationManager.shared.requestPermission()
-                Task { await vm.refresh() }
+            // Add subtle animation for tab transitions
+            .transition(.opacity.animation(.easeInOut(duration: 0.2)))
+            
+            // Bottom Liquid Navigation Bar
+            VStack {
+                Spacer()
+                LiquidNavBar(selectedTab: $selectedTab)
             }
-            .preferredColorScheme(.light)
+            .ignoresSafeArea(.all, edges: .bottom)
+            
+            // Success Toast
+            if vm.showRefreshSuccess {
+                VStack {
+                    HStack(spacing: 12) {
+                        Image(systemName: "checkmark.circle.fill").font(.title3)
+                        Text("Latest Menu Fetched").font(.system(size: 14, weight: .bold))
+                    }
+                    .padding(.vertical, 12).padding(.horizontal, 20)
+                    .background(ZStack { vm.appBg; Rectangle().stroke(Color.black, lineWidth: 3) }.shadow(color: .black, radius: 0, x: 4, y: 4))
+                    .foregroundColor(.black)
+                    .padding(.top, 60)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    Spacer()
+                }
+                .zIndex(200)
+            }
+            
+            // Modal Layer
+            if showNextMealModal {
+                NextMealModal(vm: vm, isPresented: $showNextMealModal).zIndex(100)
+            }
         }
-        .accentColor(.black)
+        .onAppear {
+            NotificationManager.shared.requestPermission()
+            Task { await vm.refresh() }
+        }
+        .preferredColorScheme(.light)
     }
 }
 
