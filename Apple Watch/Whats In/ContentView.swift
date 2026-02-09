@@ -1,6 +1,7 @@
 import SwiftUI
 import Combine
 import UIKit
+import UserNotifications
 
 // --- 1. DATA MODELS ---
 struct MenuResponse: Codable {
@@ -16,7 +17,7 @@ struct Meta: Codable {
 class HapticManager {
     static let shared = HapticManager()
     
-    // Fixed: Added missing methods for the button style
+    // FIXED: Added missing methods for mechanical feel
     func click() {
         let generator = UIImpactFeedbackGenerator(style: .rigid)
         generator.prepare()
@@ -43,7 +44,58 @@ struct DashedLine: Shape {
     }
 }
 
-// --- 3. VIEWMODEL ---
+// --- 3. NOTIFICATION MANAGER ---
+class NotificationManager {
+    static let shared = NotificationManager()
+    
+    // Time settings (24h format)
+    let schedules = [
+        "Breakfast": (hour: 8, minute: 0),
+        "Lunch":     (hour: 13, minute: 0),
+        "Snacks":    (hour: 17, minute: 0),
+        "Dinner":    (hour: 20, minute: 0)
+    ]
+    
+    let dayMapping: [String: Int] = [
+        "Sunday": 1, "Monday": 2, "Tuesday": 3, "Wednesday": 4,
+        "Thursday": 5, "Friday": 6, "Saturday": 7
+    ]
+    
+    func requestPermission() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            if granted { print("Notification permission granted") }
+        }
+    }
+    
+    func scheduleNotifications(menu: [String: [String: String]]) {
+        let center = UNUserNotificationCenter.current()
+        center.removeAllPendingNotificationRequests()
+        
+        for (dayName, meals) in menu {
+            guard let weekday = dayMapping[dayName] else { continue }
+            
+            for (mealType, food) in meals {
+                guard let time = schedules[mealType] else { continue }
+                
+                let content = UNMutableNotificationContent()
+                content.title = "\(mealType.uppercased()) TIME"
+                content.body = food
+                content.sound = .default
+                
+                var dateComponents = DateComponents()
+                dateComponents.weekday = weekday
+                dateComponents.hour = time.hour
+                dateComponents.minute = time.minute
+                
+                let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
+                let request = UNNotificationRequest(identifier: "\(dayName)_\(mealType)", content: content, trigger: trigger)
+                center.add(request)
+            }
+        }
+    }
+}
+
+// --- 4. VIEWMODEL ---
 @MainActor
 class IOSViewModel: ObservableObject {
     @Published var currentMealType: String = "LOADING..."
@@ -56,7 +108,6 @@ class IOSViewModel: ObservableObject {
     @Published var showRefreshSuccess: Bool = false
     @Published var fullMenu: [String: [String: String]] = [:]
     
-    // COLORS
     let appBg = Color(red: 1.0, green: 0.99, blue: 0.94)       // Cream
     let appAccent = Color(red: 1.0, green: 0.42, blue: 0.42)   // Red
     let appSecondary = Color(red: 1.0, green: 0.9, blue: 0.42) // Yellow
@@ -73,9 +124,7 @@ class IOSViewModel: ObservableObject {
             isLoading = false
             return
         }
-        
         defer { DispatchQueue.main.async { self.isLoading = false } }
-        
         let urlString = force ? "\(menuURL)?t=\(Date().timeIntervalSince1970)" : menuURL
         guard let url = URL(string: urlString) else { return }
         
@@ -84,6 +133,7 @@ class IOSViewModel: ObservableObject {
             let decoded = try JSONDecoder().decode(MenuResponse.self, from: data)
             self.fullMenu = decoded.menu
             self.calculateCurrentMeal(data: decoded)
+            NotificationManager.shared.scheduleNotifications(menu: decoded.menu)
             
             if force {
                 DispatchQueue.main.async {
@@ -142,13 +192,11 @@ class IOSViewModel: ObservableObject {
             self.currentFood = "Not listed"
         }
         
-        // Next Meal Logic
-        let allMeals = ["Breakfast", "Lunch", "Snacks", "Dinner"]
-        if let idx = allMeals.firstIndex(of: targetMeal) {
+        if let idx = ["Breakfast", "Lunch", "Snacks", "Dinner"].firstIndex(of: targetMeal) {
+            let allMeals = ["Breakfast", "Lunch", "Snacks", "Dinner"]
             var nextM = ""
             var nextD = targetDay
             if idx < 3 { nextM = allMeals[idx + 1] } else { nextM = "Breakfast" }
-            
             self.nextMealType = nextM.uppercased()
             if let dayMenu = data.menu[nextD], let nextF = dayMenu[nextM] {
                 self.nextFood = nextF
@@ -159,9 +207,8 @@ class IOSViewModel: ObservableObject {
     }
 }
 
-// --- 4. REUSABLE UI COMPONENTS ---
+// --- 5. REUSABLE UI COMPONENTS ---
 
-// Fixed Container with Proper Spacing for Shadow
 struct NeoContainer<Content: View>: View {
     let color: Color
     let content: Content
@@ -188,7 +235,6 @@ struct NeoMealRow: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Label
             Text(label.uppercased())
                 .font(.system(size: 13, weight: .black))
                 .padding(.horizontal, 8)
@@ -197,30 +243,24 @@ struct NeoMealRow: View {
                 .foregroundColor(.white)
                 .padding(.bottom, 8)
             
-            // Food Text
             Text(food)
                 .font(.custom("CourierNewPS-BoldMT", size: 18))
                 .foregroundColor(.black)
                 .fixedSize(horizontal: false, vertical: true)
-                .lineSpacing(4) // Better line height for readability
-                .frame(maxWidth: .infinity, alignment: .leading) // Ensure left alignment
+                .lineSpacing(4)
+                .frame(maxWidth: .infinity, alignment: .leading)
             
-            // Divider Logic
             if !isLast {
                 VStack(spacing: 0) {
-                    Spacer().frame(height: 15) // Spacing before line
-                    DashedLine()
-                        .stroke(style: StrokeStyle(lineWidth: 2, dash: [6]))
-                        .frame(height: 1)
-                        .foregroundColor(.black)
-                    Spacer().frame(height: 15) // Spacing after line
+                    Spacer().frame(height: 15)
+                    DashedLine().stroke(style: StrokeStyle(lineWidth: 2, dash: [6])).frame(height: 1).foregroundColor(.black)
+                    Spacer().frame(height: 15)
                 }
             }
         }
     }
 }
 
-// Instant Click Button Style
 struct NeoPressStyle: ButtonStyle {
     var color: Color = .white
     
@@ -230,10 +270,7 @@ struct NeoPressStyle: ButtonStyle {
             configuration.label
                 .background(color)
                 .overlay(Rectangle().stroke(Color.black, lineWidth: 3))
-                .offset(
-                    x: configuration.isPressed ? 4 : 0,
-                    y: configuration.isPressed ? 4 : 0
-                )
+                .offset(x: configuration.isPressed ? 4 : 0, y: configuration.isPressed ? 4 : 0)
         }
         .frame(height: 60)
         .padding(.trailing, 4).padding(.bottom, 4)
@@ -245,7 +282,7 @@ struct NeoPressStyle: ButtonStyle {
     }
 }
 
-// --- 5. MODALS & SUB-SCREENS ---
+// --- 6. MODALS & SUB-SCREENS ---
 
 struct NextMealModal: View {
     @ObservedObject var vm: IOSViewModel
@@ -254,7 +291,6 @@ struct NextMealModal: View {
     var body: some View {
         ZStack {
             Color.black.opacity(0.6).ignoresSafeArea().onTapGesture { isPresented = false }
-            
             VStack(spacing: 0) {
                 HStack {
                     Text("COMING UP")
@@ -300,7 +336,6 @@ struct TodayListView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
-                // Header (No Shadow)
                 HStack {
                     Text(vm.currentDay.uppercased())
                         .font(.system(size: 32, weight: .black))
@@ -311,8 +346,7 @@ struct TodayListView: View {
                 .background(vm.appSecondary)
                 .overlay(Rectangle().stroke(Color.black, lineWidth: 3))
                 
-                // List (Clean White Box)
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(spacing: 20) {
                     if let dayMenu = vm.fullMenu[vm.currentDay] {
                         ForEach(Array(vm.mealOrder.enumerated()), id: \.offset) { index, meal in
                             if let food = dayMenu[meal] {
@@ -322,8 +356,6 @@ struct TodayListView: View {
                                 .padding(.bottom, 5)
                             }
                         }
-                    } else {
-                        Text("Loading...").foregroundColor(.black).padding()
                     }
                 }
                 .padding(25)
@@ -343,7 +375,6 @@ struct WeekListView: View {
             VStack(spacing: 30) {
                 ForEach(vm.weekOrder, id: \.self) { day in
                     if let dayMenu = vm.fullMenu[day] {
-                        // Week Item (No Shadow Box, just flat style)
                         VStack(spacing: 0) {
                             HStack {
                                 Text(day.uppercased())
@@ -393,7 +424,7 @@ struct WeekListView: View {
     }
 }
 
-// --- 6. MAIN CONTENT ---
+// --- 7. MAIN CONTENT ---
 struct ContentView: View {
     @StateObject private var vm = IOSViewModel()
     @State private var showNextMealModal = false
@@ -404,7 +435,6 @@ struct ContentView: View {
                 vm.appBg.ignoresSafeArea()
                 
                 VStack(spacing: 0) {
-                    // HEADER
                     HStack {
                         Text("WHAT'S IN")
                             .font(.system(size: 40, weight: .black))
@@ -419,9 +449,7 @@ struct ContentView: View {
                     .padding(.bottom, 20)
                     
                     ScrollView {
-                        VStack(spacing: 50) { // Large spacing for separation
-                            
-                            // 1. CURRENT MEAL CARD
+                        VStack(spacing: 50) {
                             NeoContainer(color: .white) {
                                 VStack(alignment: .leading, spacing: 10) {
                                     HStack(alignment: .top) {
@@ -457,7 +485,6 @@ struct ContentView: View {
                                 }
                             }
                             
-                            // 2. NEXT MEAL (Button Wrapper)
                             Button(action: {
                                 withAnimation(.spring()) { showNextMealModal = true }
                             }) {
@@ -482,36 +509,30 @@ struct ContentView: View {
                                     }
                                 }
                             }
-                            .buttonStyle(NeoPressStyle(color: .clear)) // Passes clear because NeoContainer handles color
+                            .buttonStyle(NeoPressStyle(color: .clear))
                             
-                            // 3. NAVIGATION BUTTONS
                             HStack(spacing: 20) {
                                 NavigationLink(destination: TodayListView(vm: vm)) {
                                     Text("VIEW TODAY")
                                         .font(.system(size: 16, weight: .black))
                                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                        .foregroundColor(.black)
                                 }
-                                .buttonStyle(NeoPressStyle(color: .white)) // White Button
+                                .buttonStyle(NeoPressStyle(color: .white))
                                 
                                 NavigationLink(destination: WeekListView(vm: vm)) {
                                     Text("FULL WEEK")
                                         .font(.system(size: 16, weight: .black))
                                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                        .foregroundColor(.black)
                                 }
-                                .buttonStyle(NeoPressStyle(color: vm.appPrimary)) // Teal Button
+                                .buttonStyle(NeoPressStyle(color: vm.appPrimary))
                             }
-                            .padding(.bottom, 20)
+                            .padding(.bottom, 40)
                         }
                         .padding(.horizontal, 20)
                     }
-                    .refreshable {
-                        await vm.refresh(force: true)
-                    }
+                    .refreshable { await vm.refresh(force: true) }
                 }
                 
-                // REFRESH TOAST (Fixed Shadow)
                 if vm.showRefreshSuccess {
                     VStack {
                         HStack(spacing: 12) {
@@ -519,13 +540,7 @@ struct ContentView: View {
                             Text("Latest Menu Fetched").font(.system(size: 14, weight: .bold))
                         }
                         .padding(.vertical, 12).padding(.horizontal, 20)
-                        .background(
-                            ZStack {
-                                vm.appBg
-                                Rectangle().stroke(Color.black, lineWidth: 3)
-                            }
-                            .shadow(color: .black, radius: 0, x: 4, y: 4)
-                        )
+                        .background(ZStack { vm.appBg; Rectangle().stroke(Color.black, lineWidth: 3) }.shadow(color: .black, radius: 0, x: 4, y: 4))
                         .foregroundColor(.black)
                         .padding(.top, 10)
                         .transition(.move(edge: .top).combined(with: .opacity))
@@ -538,7 +553,10 @@ struct ContentView: View {
                     NextMealModal(vm: vm, isPresented: $showNextMealModal).zIndex(100)
                 }
             }
-            .onAppear { Task { await vm.refresh() } }
+            .onAppear {
+                NotificationManager.shared.requestPermission()
+                Task { await vm.refresh() }
+            }
             .preferredColorScheme(.light)
         }
         .accentColor(.black)
