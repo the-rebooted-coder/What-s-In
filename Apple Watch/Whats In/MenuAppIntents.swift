@@ -74,6 +74,7 @@ struct MenuShortcuts: AppShortcutsProvider {
             phrases: [
                 "What's to eat in \(.applicationName)?",
                 "Check menu in \(.applicationName)",
+                "Check next meal in \(.applicationName)",
                 "What is in \(.applicationName)?"
             ],
             shortTitle: "Check Next Meal",

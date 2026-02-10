@@ -2,7 +2,7 @@ import SwiftUI
 import Combine
 import UIKit
 import UserNotifications
-import WidgetKit // Added to reload widget timelines
+import WidgetKit
 
 // --- 1. DATA MODELS ---
 struct MenuResponse: Codable {
@@ -319,7 +319,7 @@ struct NeoPressStyle: ButtonStyle {
     }
 }
 
-// --- NEW LIQUID GLASS FLOATING NAV ---
+// --- UPDATED: LIQUID GLASS NAV BAR ---
 
 enum Tab: String, CaseIterable {
     case home = "Home"
@@ -344,61 +344,72 @@ struct LiquidFloatingNavBar: View {
             ForEach(Tab.allCases, id: \.self) { tab in
                 Button {
                     HapticManager.shared.light()
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                    withAnimation(.interpolatingSpring(stiffness: 300, damping: 20)) {
                         selectedTab = tab
                     }
                 } label: {
                     ZStack {
+                        // The "Liquid Blob" Background
                         if selectedTab == tab {
-                            // The "Liquid" Background Blob
-                            RoundedRectangle(cornerRadius: 25)
-                                .fill(Color.black)
+                            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                .fill(Color.black.opacity(0.85)) // Darker blob for contrast
                                 .matchedGeometryEffect(id: "liquid_blob", in: animationNamespace)
-                                .padding(4)
+                                .frame(height: 50)
+                                .shadow(color: Color.black.opacity(0.3), radius: 8, x: 0, y: 4)
                         }
                         
-                        HStack(spacing: 8) {
+                        // Icon & Text
+                        HStack(spacing: 6) {
                             Image(systemName: selectedTab == tab ? tab.icon + ".fill" : tab.icon)
-                                .font(.system(size: 18, weight: selectedTab == tab ? .semibold : .medium))
+                                .font(.system(size: 20, weight: selectedTab == tab ? .semibold : .regular))
                                 .scaleEffect(selectedTab == tab ? 1.0 : 0.9)
                             
                             if selectedTab == tab {
                                 Text(tab.rawValue.uppercased())
-                                    .font(.system(size: 12, weight: .bold))
+                                    .font(.system(size: 11, weight: .black))
+                                    .kerning(1.0) // Space out letters slightly
                             }
                         }
-                        .foregroundColor(selectedTab == tab ? .white : .black.opacity(0.6))
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
+                        .foregroundColor(selectedTab == tab ? .white : .primary.opacity(0.6))
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 14)
                     }
-                    .frame(height: 55)
-                    // Ensure touch target is generous
-                    .contentShape(Rectangle())
+                    .contentShape(Rectangle()) // Ensure touch target is good
                 }
             }
         }
-        .padding(5)
+        .padding(6)
         .background(
-            // Glass Material
-            Material.ultraThin
+            // --- THE GLASS MATERIAL ---
+            ZStack {
+                // The blur effect
+                Material.ultraThinMaterial
+                // A subtle white tint to make it look like frosted glass
+                Color.white.opacity(0.3)
+            }
         )
-        .clipShape(Capsule())
-        // iOS 26 style subtle glass border
+        // Smooth organic shape for the bar itself
+        .clipShape(RoundedRectangle(cornerRadius: 35, style: .continuous))
+        // The glowing glass border
         .overlay(
-            Capsule()
+            RoundedRectangle(cornerRadius: 35, style: .continuous)
                 .stroke(
                     LinearGradient(
-                        colors: [.white.opacity(0.6), .white.opacity(0.1)],
+                        colors: [
+                            .white.opacity(0.8), // Top light hit
+                            .white.opacity(0.2),
+                            .white.opacity(0.5)  // Bottom reflection
+                        ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ),
-                    lineWidth: 1
+                    lineWidth: 1.5
                 )
         )
-        // Floating shadow
-        .shadow(color: Color.black.opacity(0.15), radius: 20, x: 0, y: 10)
-        .padding(.horizontal, 24)
-        .padding(.bottom, 16)
+        // Deep shadow for floating effect
+        .shadow(color: Color.black.opacity(0.15), radius: 25, x: 0, y: 12)
+        .padding(.horizontal, 30) // Float away from screen edges
+        .padding(.bottom, 20)     // Float away from bottom
     }
 }
 
@@ -451,7 +462,7 @@ struct NextMealModal: View {
     }
 }
 
-// --- REFACTORED VIEWS (Bottom Padding Increased for Floating Nav) ---
+// --- REFACTORED VIEWS ---
 
 struct HomeView: View {
     @ObservedObject var vm: IOSViewModel
@@ -486,10 +497,15 @@ struct HomeView: View {
                                         .padding(.vertical, 3)
                                         .background(Color.black)
                                         .foregroundColor(.white)
-                                    HStack(alignment: .lastTextBaseline, spacing: 8) {
+                                    
+                                    // --- FIXED LAYOUT ---
+                                    VStack(alignment: .leading, spacing: 0) {
                                         Text(vm.currentDay.uppercased())
-                                            .font(.system(size: 28, weight: .black))
+                                            .font(.system(size: 32, weight: .black))
                                             .foregroundColor(.black)
+                                            .lineLimit(1)
+                                            .minimumScaleFactor(0.8)
+                                        
                                         Text(vm.currentDateString)
                                             .font(.system(size: 18, weight: .bold))
                                             .foregroundColor(.gray)
