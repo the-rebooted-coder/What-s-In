@@ -226,7 +226,6 @@ class IOSViewModel: ObservableObject {
             } else {
                 // If Dinner, Next Meal is BREAKFAST on the NEXT day
                 nextM = "Breakfast"
-                // ⚠️ FIX: We must increment the day
                 if let currentDayIdx = weekOrder.firstIndex(of: targetDay) {
                     let nextDayIdx = (currentDayIdx + 1) % weekOrder.count
                     nextD = weekOrder[nextDayIdx]
@@ -319,7 +318,7 @@ struct NeoPressStyle: ButtonStyle {
     }
 }
 
-// --- UPDATED: LIQUID GLASS NAV BAR ---
+// --- UPDATED: LIQUID GLASS NAV BAR (FIXED) ---
 
 enum Tab: String, CaseIterable {
     case home = "Home"
@@ -339,6 +338,34 @@ struct LiquidFloatingNavBar: View {
     @Binding var selectedTab: Tab
     @Namespace private var animationNamespace
     
+    // 1. Separate the complex background style to help the compiler
+    private var glassEffect: some View {
+        ZStack {
+            // FIX: Use Rectangle().fill() so it counts as a View, not just a Style
+            Rectangle()
+                .fill(.ultraThinMaterial)
+            
+            Color.white.opacity(0.3)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 35, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 35, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            .white.opacity(0.8),
+                            .white.opacity(0.2),
+                            .white.opacity(0.5)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1.5
+                )
+        )
+        .shadow(color: Color.black.opacity(0.15), radius: 25, x: 0, y: 12)
+    }
+    
     var body: some View {
         HStack(spacing: 0) {
             ForEach(Tab.allCases, id: \.self) { tab in
@@ -352,7 +379,7 @@ struct LiquidFloatingNavBar: View {
                         // The "Liquid Blob" Background
                         if selectedTab == tab {
                             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                .fill(Color.black.opacity(0.85)) // Darker blob for contrast
+                                .fill(Color.black.opacity(0.85))
                                 .matchedGeometryEffect(id: "liquid_blob", in: animationNamespace)
                                 .frame(height: 50)
                                 .shadow(color: Color.black.opacity(0.3), radius: 8, x: 0, y: 4)
@@ -367,49 +394,21 @@ struct LiquidFloatingNavBar: View {
                             if selectedTab == tab {
                                 Text(tab.rawValue.uppercased())
                                     .font(.system(size: 11, weight: .black))
-                                    .kerning(1.0) // Space out letters slightly
+                                    .kerning(1.0)
                             }
                         }
                         .foregroundColor(selectedTab == tab ? .white : .primary.opacity(0.6))
                         .padding(.horizontal, 18)
                         .padding(.vertical, 14)
                     }
-                    .contentShape(Rectangle()) // Ensure touch target is good
+                    .contentShape(Rectangle())
                 }
             }
         }
         .padding(6)
-        .background(
-            // --- THE GLASS MATERIAL ---
-            ZStack {
-                // The blur effect
-                Material.ultraThinMaterial
-                // A subtle white tint to make it look like frosted glass
-                Color.white.opacity(0.3)
-            }
-        )
-        // Smooth organic shape for the bar itself
-        .clipShape(RoundedRectangle(cornerRadius: 35, style: .continuous))
-        // The glowing glass border
-        .overlay(
-            RoundedRectangle(cornerRadius: 35, style: .continuous)
-                .stroke(
-                    LinearGradient(
-                        colors: [
-                            .white.opacity(0.8), // Top light hit
-                            .white.opacity(0.2),
-                            .white.opacity(0.5)  // Bottom reflection
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1.5
-                )
-        )
-        // Deep shadow for floating effect
-        .shadow(color: Color.black.opacity(0.15), radius: 25, x: 0, y: 12)
-        .padding(.horizontal, 30) // Float away from screen edges
-        .padding(.bottom, 20)     // Float away from bottom
+        .background(glassEffect) // 2. Apply the separated style here
+        .padding(.horizontal, 30)
+        .padding(.bottom, 20)
     }
 }
 
@@ -498,7 +497,7 @@ struct HomeView: View {
                                         .background(Color.black)
                                         .foregroundColor(.white)
                                     
-                                    // --- FIXED LAYOUT ---
+                                    // --- FIXED LAYOUT (Stacks Date Below Day) ---
                                     VStack(alignment: .leading, spacing: 0) {
                                         Text(vm.currentDay.uppercased())
                                             .font(.system(size: 32, weight: .black))
