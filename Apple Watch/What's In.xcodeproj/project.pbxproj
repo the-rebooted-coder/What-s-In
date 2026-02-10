@@ -6,12 +6,64 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		065631FD2F3B806500BBA81C /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 065631FC2F3B806500BBA81C /* WidgetKit.framework */; };
+		065631FF2F3B806500BBA81C /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 065631FE2F3B806500BBA81C /* SwiftUI.framework */; };
+		065632102F3B806600BBA81C /* Menu WidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 065631FA2F3B806500BBA81C /* Menu WidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		0656320E2F3B806600BBA81C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 068976702F3A445B009B88EF /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 065631F92F3B806500BBA81C;
+			remoteInfo = "Menu WidgetExtension";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		065632152F3B806600BBA81C /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				065632102F3B806600BBA81C /* Menu WidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		065631FA2F3B806500BBA81C /* Menu WidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Menu WidgetExtension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		065631FC2F3B806500BBA81C /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		065631FE2F3B806500BBA81C /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		065632162F3B815300BBA81C /* Menu WidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Menu WidgetExtension.entitlements"; sourceTree = "<group>"; };
 		0689767C2F3A445B009B88EF /* What's In Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "What's In Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		0699F5612F3A797200BF6421 /* Whats In.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Whats In.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		065632112F3B806600BBA81C /* Exceptions for "Menu Widget" folder in "Menu WidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 065631F92F3B806500BBA81C /* Menu WidgetExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		065632002F3B806500BBA81C /* Menu Widget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				065632112F3B806600BBA81C /* Exceptions for "Menu Widget" folder in "Menu WidgetExtension" target */,
+			);
+			path = "Menu Widget";
+			sourceTree = "<group>";
+		};
 		068976802F3A445B009B88EF /* What's In Watch App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = "What's In Watch App";
@@ -25,6 +77,15 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		065631F72F3B806500BBA81C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				065631FF2F3B806500BBA81C /* SwiftUI.framework in Frameworks */,
+				065631FD2F3B806500BBA81C /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		068976792F3A445B009B88EF /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -42,11 +103,23 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		065631FB2F3B806500BBA81C /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				065631FC2F3B806500BBA81C /* WidgetKit.framework */,
+				065631FE2F3B806500BBA81C /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		0689766F2F3A445B009B88EF = {
 			isa = PBXGroup;
 			children = (
+				065632162F3B815300BBA81C /* Menu WidgetExtension.entitlements */,
 				068976802F3A445B009B88EF /* What's In Watch App */,
 				0699F5622F3A797200BF6421 /* Whats In */,
+				065632002F3B806500BBA81C /* Menu Widget */,
+				065631FB2F3B806500BBA81C /* Frameworks */,
 				068976772F3A445B009B88EF /* Products */,
 			);
 			sourceTree = "<group>";
@@ -56,6 +129,7 @@
 			children = (
 				0689767C2F3A445B009B88EF /* What's In Watch App.app */,
 				0699F5612F3A797200BF6421 /* Whats In.app */,
+				065631FA2F3B806500BBA81C /* Menu WidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -63,6 +137,28 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		065631F92F3B806500BBA81C /* Menu WidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 065632122F3B806600BBA81C /* Build configuration list for PBXNativeTarget "Menu WidgetExtension" */;
+			buildPhases = (
+				065631F62F3B806500BBA81C /* Sources */,
+				065631F72F3B806500BBA81C /* Frameworks */,
+				065631F82F3B806500BBA81C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				065632002F3B806500BBA81C /* Menu Widget */,
+			);
+			name = "Menu WidgetExtension";
+			packageProductDependencies = (
+			);
+			productName = "Menu WidgetExtension";
+			productReference = 065631FA2F3B806500BBA81C /* Menu WidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		0689767B2F3A445B009B88EF /* What's In Watch App */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 068976892F3A445C009B88EF /* Build configuration list for PBXNativeTarget "What's In Watch App" */;
@@ -92,10 +188,12 @@
 				0699F55D2F3A797200BF6421 /* Sources */,
 				0699F55E2F3A797200BF6421 /* Frameworks */,
 				0699F55F2F3A797200BF6421 /* Resources */,
+				065632152F3B806600BBA81C /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				0656320F2F3B806600BBA81C /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				0699F5622F3A797200BF6421 /* Whats In */,
@@ -117,6 +215,9 @@
 				LastSwiftUpdateCheck = 2620;
 				LastUpgradeCheck = 2620;
 				TargetAttributes = {
+					065631F92F3B806500BBA81C = {
+						CreatedOnToolsVersion = 26.2;
+					};
 					0689767B2F3A445B009B88EF = {
 						CreatedOnToolsVersion = 26.2;
 					};
@@ -141,11 +242,19 @@
 			targets = (
 				0689767B2F3A445B009B88EF /* What's In Watch App */,
 				0699F5602F3A797200BF6421 /* Whats In */,
+				065631F92F3B806500BBA81C /* Menu WidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		065631F82F3B806500BBA81C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		0689767A2F3A445B009B88EF /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -163,6 +272,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		065631F62F3B806500BBA81C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		068976782F3A445B009B88EF /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -179,7 +295,82 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		0656320F2F3B806600BBA81C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 065631F92F3B806500BBA81C /* Menu WidgetExtension */;
+			targetProxy = 0656320E2F3B806600BBA81C /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		065632132F3B806600BBA81C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = "Menu WidgetExtension.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = SR4L3AR63H;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Menu Widget/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Menu Widget";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "onesilicondiode.Whats-In.Menu-Widget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		065632142F3B806600BBA81C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = "Menu WidgetExtension.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = SR4L3AR63H;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Menu Widget/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Menu Widget";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "onesilicondiode.Whats-In.Menu-Widget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		068976872F3A445C009B88EF /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -368,6 +559,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Whats In/Whats In.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = SR4L3AR63H;
@@ -402,6 +594,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Whats In/Whats In.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = SR4L3AR63H;
@@ -435,6 +628,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		065632122F3B806600BBA81C /* Build configuration list for PBXNativeTarget "Menu WidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				065632132F3B806600BBA81C /* Debug */,
+				065632142F3B806600BBA81C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		068976732F3A445B009B88EF /* Build configuration list for PBXProject "What's In" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

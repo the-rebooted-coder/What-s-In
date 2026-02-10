@@ -2,6 +2,7 @@ import SwiftUI
 import Combine
 import UIKit
 import UserNotifications
+import WidgetKit // Added to reload widget timelines
 
 // --- 1. DATA MODELS ---
 struct MenuResponse: Codable {
@@ -106,6 +107,9 @@ class IOSViewModel: ObservableObject {
     @Published var showRefreshSuccess: Bool = false
     @Published var fullMenu: [String: [String: String]] = [:]
     
+    // ⚠️ IMPORTANT: Ensure this matches your App Group ID exactly
+    let appGroupSuite = "group.com.onesilicondiode.menutracker"
+    
     let appBg = Color(red: 1.0, green: 0.99, blue: 0.94)       // Cream
     let appAccent = Color(red: 1.0, green: 0.42, blue: 0.42)   // Red
     let appSecondary = Color(red: 1.0, green: 0.9, blue: 0.42) // Yellow
@@ -129,8 +133,13 @@ class IOSViewModel: ObservableObject {
         do {
             let (data, _) = try await URLSession.shared.data(from: url)
             let decoded = try JSONDecoder().decode(MenuResponse.self, from: data)
+            
             self.fullMenu = decoded.menu
             self.calculateCurrentMeal(data: decoded)
+            
+            // --- SAVE DATA FOR WIDGET ---
+            saveDataForWidget(data: data)
+            
             NotificationManager.shared.scheduleNotifications(menu: decoded.menu)
             
             if force {
@@ -148,6 +157,17 @@ class IOSViewModel: ObservableObject {
         }
     }
     
+    private func saveDataForWidget(data: Data) {
+        if let sharedDefaults = UserDefaults(suiteName: appGroupSuite) {
+            sharedDefaults.set(data, forKey: "cachedMenuData")
+            // Tell widget to reload immediately
+            WidgetCenter.shared.reloadAllTimelines()
+            print("Data saved to App Group: \(appGroupSuite)")
+        } else {
+            print("Failed to access App Group. Check your entitlements.")
+        }
+    }
+    
     func calculateCurrentMeal(data: MenuResponse) {
         let now = Date()
         var calendar = Calendar.current
@@ -158,11 +178,13 @@ class IOSViewModel: ObservableObject {
         var targetMeal = ""
         var targetDay = todayName
         
+        // Determine Current Meal & Day
         if hour < timeLimits.breakfast { targetMeal = "Breakfast" }
         else if hour < timeLimits.lunch { targetMeal = "Lunch" }
         else if hour < timeLimits.snacks { targetMeal = "Snacks" }
         else if hour < timeLimits.dinner { targetMeal = "Dinner" }
         else {
+            // Late night -> Show Tomorrow's Breakfast
             targetMeal = "Breakfast"
             if let tomorrow = calendar.date(byAdding: .day, value: 1, to: now) {
                 targetDay = calendar.weekdaySymbols[calendar.component(.weekday, from: tomorrow) - 1]
@@ -172,6 +194,7 @@ class IOSViewModel: ObservableObject {
         self.currentMealType = targetMeal.uppercased()
         self.currentDay = targetDay
         
+        // Calculate Date String (e.g., Dec 01)
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
         if let weekStartDate = dateFormatter.date(from: data.meta.weekStart) {
@@ -184,18 +207,34 @@ class IOSViewModel: ObservableObject {
             }
         }
         
+        // Get Current Food
         if let dayMenu = data.menu[targetDay], let food = dayMenu[targetMeal] {
             self.currentFood = food
         } else {
             self.currentFood = "Not listed"
         }
         
+        // --- NEXT MEAL LOGIC (FIXED) ---
         if let idx = ["Breakfast", "Lunch", "Snacks", "Dinner"].firstIndex(of: targetMeal) {
             let allMeals = ["Breakfast", "Lunch", "Snacks", "Dinner"]
             var nextM = ""
             var nextD = targetDay
-            if idx < 3 { nextM = allMeals[idx + 1] } else { nextM = "Breakfast" }
+            
+            if idx < 3 {
+                // If Breakfast/Lunch/Snacks, Next Meal is the NEXT one on the SAME day
+                nextM = allMeals[idx + 1]
+            } else {
+                // If Dinner, Next Meal is BREAKFAST on the NEXT day
+                nextM = "Breakfast"
+                // ⚠️ FIX: We must increment the day
+                if let currentDayIdx = weekOrder.firstIndex(of: targetDay) {
+                    let nextDayIdx = (currentDayIdx + 1) % weekOrder.count
+                    nextD = weekOrder[nextDayIdx]
+                }
+            }
+            
             self.nextMealType = nextM.uppercased()
+            
             if let dayMenu = data.menu[nextD], let nextF = dayMenu[nextM] {
                 self.nextFood = nextF
             } else {
