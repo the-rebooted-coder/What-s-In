@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "WhatsIn (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "WhatsIn (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

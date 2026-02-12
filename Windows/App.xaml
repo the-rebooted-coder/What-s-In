@@ -1,0 +1,42 @@
+<Application
+    x:Class="WhatsIn.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:WhatsIn">
+
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <SolidColorBrush x:Key="BrandCream" Color="#FFFDF0"/>
+            <SolidColorBrush x:Key="BrandCoral" Color="#FF6B6B"/>
+            <SolidColorBrush x:Key="BrandTeal" Color="#4ECDC4"/>
+            <SolidColorBrush x:Key="BrandYellow" Color="#FFE66D"/>
+            <SolidColorBrush x:Key="BrandBlack" Color="#000000"/>
+
+            <FontFamily x:Key="CourierFont">Courier New</FontFamily>
+            <FontFamily x:Key="BlockFont">Arial Black</FontFamily>
+
+            <SolidColorBrush x:Key="NavigationViewItemForeground" Color="Black"/>
+            <SolidColorBrush x:Key="NavigationViewItemForegroundPointerOver" Color="Black"/>
+            <SolidColorBrush x:Key="NavigationViewItemForegroundPressed" Color="Black"/>
+            <SolidColorBrush x:Key="NavigationViewItemForegroundSelected" Color="Black"/>
+            <SolidColorBrush x:Key="NavigationViewItemForegroundSelectedPointerOver" Color="Black"/>
+            <SolidColorBrush x:Key="NavigationViewItemForegroundIcon" Color="Black"/>
+            <SolidColorBrush x:Key="NavigationViewItemForegroundIconPointerOver" Color="Black"/>
+            <SolidColorBrush x:Key="NavigationViewItemForegroundIconSelected" Color="Black"/>
+
+            <SolidColorBrush x:Key="NavigationViewContentBackground" Color="#FFFDF0"/>
+            <SolidColorBrush x:Key="NavigationViewTopPaneBackground" Color="#FFFDF0"/>
+            <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="#FFFDF0"/>
+            <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="#FFFDF0"/>
+            <SolidColorBrush x:Key="NavigationViewItemBackgroundPointerOver" Color="#FFFDE0"/>
+            <SolidColorBrush x:Key="NavigationViewSelectionIndicatorForeground" Color="#FF6B6B"/>
+
+            <x:Double x:Key="NavigationViewOpenPaneLength">180</x:Double>
+
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
